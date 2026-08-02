@@ -389,11 +389,11 @@ def get_local_ip():
 def generate_qr(vehicle_id, qr_token):
     """
     Create a QR image file for a vehicle.
-    Priority order:
-      1. BASE_URL or PUBLIC_URL or VERCEL_URL if set
-      2. request.host_url if in request context and not loopback (127.0.0.1/localhost)
-      3. detected LAN IP (via get_local_ip())
-      4. 127.0.0.1 fallback
+    Resolution priority:
+      1. BASE_URL or PUBLIC_URL or VERCEL_URL if set in environment
+      2. Active HTTP request host (e.g. https://<app>.vercel.app on Vercel)
+      3. LAN IP detection for local Wi-Fi testing
+      4. http://127.0.0.1:5000 fallback
     """
     custom_base = (
         os.environ.get("BASE_URL")
@@ -401,25 +401,32 @@ def generate_qr(vehicle_id, qr_token):
         or os.environ.get("VERCEL_URL")
     )
     if custom_base:
+        custom_base = custom_base.rstrip("/")
         if not custom_base.startswith("http://") and not custom_base.startswith("https://"):
-            custom_base = "http://" + custom_base
-        base = custom_base.rstrip("/")
-    else:
-        lan_ip = get_local_ip()
-        if has_request_context():
-            host_url = request.host_url.rstrip("/")
-            if "127.0.0.1" in host_url or "localhost" in host_url:
-                if lan_ip and lan_ip != "127.0.0.1":
-                    base = host_url.replace("127.0.0.1", lan_ip).replace("localhost", lan_ip)
-                else:
-                    base = host_url
+            custom_base = "https://" + custom_base
+        base = custom_base
+    elif has_request_context():
+        proto = request.headers.get("X-Forwarded-Proto", request.scheme)
+        host = request.headers.get("X-Forwarded-Host", request.host).rstrip("/")
+        if "127.0.0.1" not in host and "localhost" not in host:
+            if "vercel.app" in host:
+                proto = "https"
+            if not host.startswith("http://") and not host.startswith("https://"):
+                base = f"{proto}://{host}"
             else:
-                base = host_url
+                base = host
         else:
+            lan_ip = get_local_ip()
             if lan_ip and lan_ip != "127.0.0.1":
                 base = f"http://{lan_ip}:5000"
             else:
                 base = "http://127.0.0.1:5000"
+    else:
+        lan_ip = get_local_ip()
+        if lan_ip and lan_ip != "127.0.0.1":
+            base = f"http://{lan_ip}:5000"
+        else:
+            base = "http://127.0.0.1:5000"
 
     verify_url = f"{base}/verify/{qr_token}"
 
