@@ -1,57 +1,121 @@
 {% extends "base.html" %}
 
-{% block title %}Parking Pass - {{ vehicle.vehicle_number }}{% endblock %}
+{% block title %}CampusPark | Your Parking Pass{% endblock %}
 
 {% block content %}
-<div class="max-w-md mx-auto py-6">
-  <!-- Card Container -->
-  <div class="bg-white border border-outline-variant rounded-2xl p-8 shadow-sm text-center relative overflow-hidden">
-    
-    <!-- Top Pass Header -->
-    <div class="flex justify-between items-center mb-6 border-b border-outline-variant pb-4">
-      <div class="flex items-center gap-2">
-        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span class="text-xs font-extrabold uppercase tracking-wider text-secondary">Campus Parking Pass</span>
-      </div>
-      <span class="px-3 py-1 rounded-full text-xs font-bold {% if status == 'PARKED' %}bg-amber-100 text-amber-900{% else %}bg-emerald-100 text-emerald-900{% endif %}">
-        {{ status }}
-      </span>
-    </div>
+<style>
+.qr-gradient {
+    background: linear-gradient(135deg, #171717 0%, #313030 100%);
+}
+.card-shadow {
+    box-shadow: 0px 4px 20px rgba(0,0,0,0.04);
+}
+</style>
 
-    <!-- Owner & Vehicle Info -->
-    <div class="mb-6">
-      <h2 class="text-2xl font-black text-primary tracking-tight mb-1">{{ vehicle.vehicle_number }}</h2>
-      <p class="text-sm font-bold text-secondary">{{ vehicle.name }} <span class="text-xs font-normal">({{ vehicle.college_id }})</span></p>
-      <div class="inline-flex items-center gap-1.5 mt-2 px-3 py-1 bg-surface-container rounded-lg text-xs font-extrabold text-primary">
-        <span class="material-symbols-outlined text-sm">
-          {% if vehicle.vehicle_type == 'Bike' %}pedal_bike{% else %}directions_car{% endif %}
-        </span>
-        <span>{{ vehicle.vehicle_type }}</span>
-      </div>
-    </div>
+<div class="max-w-5xl mx-auto py-xl">
+<!-- Header Section -->
+<section class="mb-lg">
+<h2 class="font-display text-headline-lg text-primary mb-xs">Your parking pass</h2>
+<p class="font-body-lg text-secondary">Show this QR at the parking entrance.</p>
+</section>
 
-    <!-- QR Code Section -->
-    <div class="p-6 bg-surface-container-low border border-outline-variant rounded-2xl inline-block mb-6 shadow-inner">
-      <img src="{{ url_for('static', filename='qr/' + qr_image) }}" 
-           alt="Vehicle QR Code" 
-           class="w-56 h-56 object-contain rounded-lg mx-auto bg-white p-2">
-    </div>
+<!-- Bento Grid Layout for Pass -->
+<div class="grid grid-cols-12 gap-lg items-start">
+<!-- Digital QR Pass Card (Left Column) -->
+<div class="col-span-12 lg:col-span-7">
+<div class="bg-white border border-outline-variant rounded-xl overflow-hidden card-shadow relative">
+<!-- Card Header -->
+<div class="qr-gradient p-lg flex justify-between items-center text-white">
+<div>
+<h3 class="font-display text-headline-md font-bold">CampusPark</h3>
+<span class="text-label-sm opacity-80 font-medium tracking-widest uppercase">Student / Staff Access Pass</span>
+</div>
+<span class="material-symbols-outlined text-headline-lg opacity-40" data-icon="sensors">sensors</span>
+</div>
 
-    <p class="text-xs text-secondary font-medium mb-6">
-      Show this QR code to the gate security officer upon entrance & exit.
-    </p>
+<!-- Card Body with QR -->
+<div class="p-xl flex flex-col items-center">
+<div class="bg-surface-container-low p-md rounded-xl border border-outline-variant mb-lg group relative">
+<div class="w-64 h-64 bg-white p-base rounded-lg flex items-center justify-center border border-outline-variant">
+<img src="{{ url_for('static', filename='qr/' + qr_image) }}" alt="Vehicle QR Pass" class="w-full h-full object-contain">
+</div>
+<div class="absolute -top-3 -right-3 bg-white px-sm py-xs border border-outline-variant rounded-full flex items-center gap-xs shadow-sm">
+<div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+<span class="text-label-sm font-bold uppercase">{{ status }}</span>
+</div>
+</div>
 
-    <!-- Action Controls -->
-    <div class="grid grid-cols-2 gap-3">
-      <button onclick="window.print()" class="py-3 px-4 rounded-xl border border-primary text-primary font-bold text-sm hover:bg-surface-container transition-colors flex items-center justify-center gap-2">
-        <span class="material-symbols-outlined text-base">print</span>
-        <span>Print Pass</span>
-      </button>
-      <a href="{{ url_for('verify_token', token=vehicle.qr_token) }}" target="_blank" class="py-3 px-4 rounded-xl bg-primary text-on-primary font-bold text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
-        <span class="material-symbols-outlined text-base">verified</span>
-        <span>Verify Live</span>
-      </a>
-    </div>
-  </div>
+<!-- User Info Grid -->
+<div class="w-full grid grid-cols-2 gap-md border-t border-outline-variant pt-lg">
+<div>
+<p class="text-label-sm text-secondary uppercase tracking-tighter">Owner Name</p>
+<p class="font-display text-body-lg font-bold text-primary">{{ vehicle.name }}</p>
+</div>
+<div>
+<p class="text-label-sm text-secondary uppercase tracking-tighter">Registration ID</p>
+<p class="font-display text-body-lg font-bold text-primary">{{ vehicle.college_id }}</p>
+</div>
+<div>
+<p class="text-label-sm text-secondary uppercase tracking-tighter">Vehicle Number</p>
+<p class="font-display text-body-lg font-bold text-primary">{{ vehicle.vehicle_number }}</p>
+</div>
+<div>
+<p class="text-label-sm text-secondary uppercase tracking-tighter">Vehicle Type</p>
+<p class="font-display text-body-lg font-bold text-primary">{{ vehicle.vehicle_type }}</p>
+</div>
+</div>
+</div>
+
+<!-- Card Footer -->
+<div class="bg-surface-container-low border-t border-outline-variant px-lg py-md flex justify-between items-center">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-secondary text-[18px]" data-icon="event_available">event_available</span>
+<span class="text-label-sm text-secondary">Verified Academic Pass</span>
+</div>
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-secondary text-[18px]" data-icon="lock">lock</span>
+<span class="text-label-sm text-secondary">Encrypted QR Token</span>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Actions & Details (Right Column) -->
+<div class="col-span-12 lg:col-span-5 flex flex-col gap-md">
+<!-- Quick Actions -->
+<div class="bg-white border border-outline-variant rounded-xl p-lg card-shadow">
+<h4 class="font-display text-headline-md mb-base">Actions</h4>
+<div class="flex flex-col gap-base">
+<button onclick="window.print()" class="w-full flex items-center justify-center gap-base bg-primary text-on-primary py-md rounded-lg font-display text-label-md font-bold hover:opacity-90 transition-all">
+<span class="material-symbols-outlined" data-icon="download">download</span>
+Print / Download Pass
+</button>
+<a href="{{ url_for('dashboard') }}" class="w-full flex items-center justify-center gap-base border border-outline-variant text-primary py-md rounded-lg font-display text-label-md font-bold hover:bg-surface-container-low transition-all">
+<span class="material-symbols-outlined" data-icon="grid_view">grid_view</span>
+View parking availability
+</a>
+</div>
+</div>
+
+<!-- Usage Tips / Instructions -->
+<div class="bg-surface-container-low border border-outline-variant rounded-xl p-lg">
+<h4 class="font-display text-label-sm text-secondary uppercase tracking-widest mb-md">Usage Instructions</h4>
+<ul class="space-y-md">
+<li class="flex gap-md">
+<span class="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center text-label-sm">1</span>
+<p class="text-label-md text-secondary">Ensure your screen brightness is set high for faster scanner reading.</p>
+</li>
+<li class="flex gap-md">
+<span class="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center text-label-sm">2</span>
+<p class="text-label-md text-secondary">Keep the QR code aligned inside the scanner frame at the campus gate.</p>
+</li>
+<li class="flex gap-md">
+<span class="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center text-label-sm">3</span>
+<p class="text-label-md text-secondary">Proceed to your designated parking bay once entry is authorized.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
 </div>
 {% endblock %}

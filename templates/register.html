@@ -1,100 +1,90 @@
 {% extends "base.html" %}
 
-{% block title %}Register Vehicle - CampusPark{% endblock %}
+{% block title %}Register Your Vehicle - CampusPark{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto py-md">
-  <!-- Header Text -->
-  <div class="mb-lg">
-    <h1 class="text-3xl font-extrabold text-primary mb-2">Register Your Vehicle</h1>
-    <p class="text-base text-secondary font-medium">It only takes a minute. We'll generate a secure personal parking QR code for your vehicle.</p>
-  </div>
+<style>
+.selection-card.active {
+    border-color: #171717 !important;
+    border-width: 2px !important;
+    background-color: #ffffff !important;
+    box-shadow: 0px 4px 20px rgba(0,0,0,0.04);
+}
+</style>
 
-  <!-- Registration Form -->
-  <form class="space-y-6" action="{{ url_for('register') }}" method="POST">
-    <!-- Vehicle Type Selection -->
-    <div class="space-y-2">
-      <label class="text-xs font-bold text-secondary uppercase tracking-wider block">Vehicle Type</label>
-      <input type="hidden" name="vehicle_type" id="vehicle_type_input" value="Bike">
-      
-      <div class="grid grid-cols-2 gap-4">
-        <button type="button" id="btn-bike" onclick="selectVehicle('Bike')"
-                class="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-primary bg-white shadow-sm transition-all group">
-          <span class="material-symbols-outlined text-4xl mb-2 group-hover:scale-110 transition-transform">pedal_bike</span>
-          <span class="text-sm font-extrabold text-primary">Bike / Two-Wheeler</span>
-        </button>
+<div class="flex-grow flex items-center justify-center py-xl px-gutter max-w-2xl mx-auto">
+<div class="w-full">
+<!-- Header Text -->
+<div class="mb-lg">
+<h1 class="font-headline-lg text-headline-lg text-primary mb-xs">Register your vehicle</h1>
+<p class="font-body-md text-body-md text-secondary">It only takes a minute. We'll create a personal parking QR for you.</p>
+</div>
 
-        <button type="button" id="btn-car" onclick="selectVehicle('Car')"
-                class="flex flex-col items-center justify-center p-6 rounded-xl border border-outline-variant bg-surface hover:bg-white transition-all group">
-          <span class="material-symbols-outlined text-4xl mb-2 text-secondary group-hover:scale-110 transition-transform">directions_car</span>
-          <span class="text-sm font-bold text-secondary">Car / Four-Wheeler</span>
-        </button>
-      </div>
-    </div>
+<!-- Registration Form -->
+<form class="space-y-lg" action="{{ url_for('register') }}" method="POST">
+<input type="hidden" name="vehicle_type" id="vehicle_type" value="Car">
 
-    <!-- Input Fields Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-      <div class="space-y-1.5">
-        <label class="text-xs font-bold text-secondary uppercase tracking-wider block" for="name">Full Name</label>
-        <input class="w-full bg-white border border-outline-variant rounded-xl px-4 py-3 text-sm font-medium focus:border-primary focus:ring-0 outline-none transition-colors"
-               id="name" name="name" placeholder="e.g. Swetha G" required type="text"/>
-      </div>
+<!-- Vehicle Type Selection -->
+<div class="space-y-base">
+<label class="font-label-sm text-label-sm text-secondary uppercase tracking-wider block">Vehicle Type</label>
+<div class="grid grid-cols-2 gap-md">
+<button class="selection-card active flex flex-col items-center justify-center p-xl rounded-xl border border-outline-variant bg-surface transition-all duration-200 group" id="type-car" onclick="selectVehicleType('Car')" type="button">
+<span class="material-symbols-outlined text-[48px] mb-sm group-hover:scale-110 transition-transform">directions_car</span>
+<span class="font-label-md text-label-md">Car</span>
+</button>
+<button class="selection-card flex flex-col items-center justify-center p-xl rounded-xl border border-outline-variant bg-surface transition-all duration-200 group" id="type-bike" onclick="selectVehicleType('Bike')" type="button">
+<span class="material-symbols-outlined text-[48px] mb-sm group-hover:scale-110 transition-transform">pedal_bike</span>
+<span class="font-label-md text-label-md">Bike</span>
+</button>
+</div>
+</div>
 
-      <div class="space-y-1.5">
-        <label class="text-xs font-bold text-secondary uppercase tracking-wider block" for="college_id">College / Staff ID</label>
-        <input class="w-full bg-white border border-outline-variant rounded-xl px-4 py-3 text-sm font-medium focus:border-primary focus:ring-0 outline-none transition-colors"
-               id="college_id" name="college_id" placeholder="e.g. C-29384" required type="text"/>
-      </div>
+<!-- Input Fields Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-x-lg gap-y-md">
+<div class="space-y-xs">
+<label class="font-label-sm text-label-sm text-secondary uppercase tracking-wider block" for="name">Your name</label>
+<input class="w-full bg-transparent border border-outline-variant rounded-lg px-md py-sm font-body-md text-body-md transition-colors" id="name" name="name" placeholder="John Doe" required type="text"/>
+</div>
+<div class="space-y-xs">
+<label class="font-label-sm text-label-sm text-secondary uppercase tracking-wider block" for="college_id">College ID</label>
+<input class="w-full bg-transparent border border-outline-variant rounded-lg px-md py-sm font-body-md text-body-md transition-colors" id="college_id" name="college_id" placeholder="C-29384" required type="text"/>
+</div>
+<div class="space-y-xs">
+<label class="font-label-sm text-label-sm text-secondary uppercase tracking-wider block" for="email">Email</label>
+<input class="w-full bg-transparent border border-outline-variant rounded-lg px-md py-sm font-body-md text-body-md transition-colors" id="email" name="email" placeholder="j.doe@university.edu" required type="email"/>
+</div>
+<div class="space-y-xs">
+<label class="font-label-sm text-label-sm text-secondary uppercase tracking-wider block" for="vehicle_number">Vehicle number</label>
+<input class="w-full bg-transparent border border-outline-variant rounded-lg px-md py-sm font-body-md text-body-md transition-colors uppercase font-bold" id="vehicle_number" name="vehicle_number" placeholder="ABC-1234" required type="text"/>
+</div>
+</div>
 
-      <div class="space-y-1.5">
-        <label class="text-xs font-bold text-secondary uppercase tracking-wider block" for="email">Email Address</label>
-        <input class="w-full bg-white border border-outline-variant rounded-xl px-4 py-3 text-sm font-medium focus:border-primary focus:ring-0 outline-none transition-colors"
-               id="email" name="email" placeholder="e.g. student@college.edu" required type="email"/>
-      </div>
-
-      <div class="space-y-1.5">
-        <label class="text-xs font-bold text-secondary uppercase tracking-wider block" for="vehicle_number">Vehicle License Plate</label>
-        <input class="w-full bg-white border border-outline-variant rounded-xl px-4 py-3 text-sm font-extrabold uppercase focus:border-primary focus:ring-0 outline-none transition-colors"
-               id="vehicle_number" name="vehicle_number" placeholder="e.g. TN38AB1234" required type="text"/>
-      </div>
-    </div>
-
-    <!-- Action Button -->
-    <div class="pt-4">
-      <button type="submit" class="w-full bg-primary text-on-primary py-4 px-6 rounded-xl font-bold text-base hover:opacity-90 active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-sm">
-        <span>Generate Parking QR Pass</span>
-        <span class="material-symbols-outlined text-lg">arrow_forward</span>
-      </button>
-      <p class="text-center mt-4 text-xs text-secondary font-medium">
-        By registering, your vehicle is assigned to the campus parking database.
-      </p>
-    </div>
-  </form>
+<!-- Action Area -->
+<div class="pt-md">
+<button class="w-full bg-primary text-on-primary py-md px-xl rounded-xl font-headline-md text-headline-md hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-sm" type="submit">
+<span>Create my parking QR</span>
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+<p class="text-center mt-md text-label-sm text-secondary">
+By registering, you agree to our Campus Parking Terms &amp; Privacy Policy.
+</p>
+</div>
+</form>
+</div>
 </div>
 
 <script>
-  function selectVehicle(type) {
-    document.getElementById('vehicle_type_input').value = type;
-    const bikeBtn = document.getElementById('btn-bike');
-    const carBtn = document.getElementById('btn-car');
-    
-    if (type === 'Bike') {
-      bikeBtn.className = "flex flex-col items-center justify-center p-6 rounded-xl border-2 border-primary bg-white shadow-sm transition-all group";
-      bikeBtn.querySelector('span:first-child').className = "material-symbols-outlined text-4xl mb-2 text-primary group-hover:scale-110 transition-transform";
-      bikeBtn.querySelector('span:last-child').className = "text-sm font-extrabold text-primary";
-      
-      carBtn.className = "flex flex-col items-center justify-center p-6 rounded-xl border border-outline-variant bg-surface hover:bg-white transition-all group";
-      carBtn.querySelector('span:first-child').className = "material-symbols-outlined text-4xl mb-2 text-secondary group-hover:scale-110 transition-transform";
-      carBtn.querySelector('span:last-child').className = "text-sm font-bold text-secondary";
+function selectVehicleType(type) {
+    document.getElementById('vehicle_type').value = type;
+    const carBtn = document.getElementById('type-car');
+    const bikeBtn = document.getElementById('type-bike');
+    if (type === 'Car') {
+        carBtn.classList.add('active');
+        bikeBtn.classList.remove('active');
     } else {
-      carBtn.className = "flex flex-col items-center justify-center p-6 rounded-xl border-2 border-primary bg-white shadow-sm transition-all group";
-      carBtn.querySelector('span:first-child').className = "material-symbols-outlined text-4xl mb-2 text-primary group-hover:scale-110 transition-transform";
-      carBtn.querySelector('span:last-child').className = "text-sm font-extrabold text-primary";
-      
-      bikeBtn.className = "flex flex-col items-center justify-center p-6 rounded-xl border border-outline-variant bg-surface hover:bg-white transition-all group";
-      bikeBtn.querySelector('span:first-child').className = "material-symbols-outlined text-4xl mb-2 text-secondary group-hover:scale-110 transition-transform";
-      bikeBtn.querySelector('span:last-child').className = "text-sm font-bold text-secondary";
+        bikeBtn.classList.add('active');
+        carBtn.classList.remove('active');
     }
-  }
+}
 </script>
 {% endblock %}

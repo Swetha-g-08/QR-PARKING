@@ -1,73 +1,116 @@
 {% extends "admin_base.html" %}
 
-{% block title %}Parking History - CampusPark{% endblock %}
-{% block page_title %}Vehicles & History Logs{% endblock %}
+{% block title %}CampusPark Admin - History & Vehicles{% endblock %}
+{% block page_title %}Vehicles & Logs{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
-  <!-- Search Bar -->
-  <div class="bg-white border border-outline-variant rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
-    <h3 class="text-lg font-bold text-primary">Parking Records</h3>
-    
-    <form action="{{ url_for('history') }}" method="GET" class="flex gap-2 w-full sm:w-auto">
-      <input type="text" name="q" value="{{ q }}" placeholder="Search by vehicle plate..." 
-             class="bg-surface border border-outline-variant rounded-xl px-4 py-2 text-sm font-bold uppercase focus:border-primary focus:ring-0 outline-none w-full sm:w-64">
-      <button type="submit" class="bg-primary text-on-primary px-4 py-2 rounded-xl text-sm font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-1">
-        <span class="material-symbols-outlined text-base">search</span>
-        <span>Search</span>
-      </button>
-      {% if q %}
-        <a href="{{ url_for('history') }}" class="px-3 py-2 border border-outline-variant rounded-xl text-xs font-bold text-secondary hover:bg-surface-container flex items-center">Clear</a>
-      {% endif %}
-    </form>
-  </div>
-
-  <!-- Records Table -->
-  <div class="bg-white border border-outline-variant rounded-2xl p-6 shadow-sm">
-    {% if rows %}
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm">
-          <thead>
-            <tr class="border-b border-outline-variant text-xs uppercase text-secondary font-bold">
-              <th class="py-3 px-4">Vehicle Plate</th>
-              <th class="py-3 px-4">Owner</th>
-              <th class="py-3 px-4">Bay</th>
-              <th class="py-3 px-4">Entry Time</th>
-              <th class="py-3 px-4">Exit Time</th>
-              <th class="py-3 px-4 text-right">Status</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-outline-variant">
-            {% for r in rows %}
-              <tr class="hover:bg-surface-container-low transition-colors">
-                <td class="py-3 px-4 font-extrabold text-primary">{{ r.vehicle_number }}</td>
-                <td class="py-3 px-4 font-medium text-secondary">{{ r.owner }}</td>
-                <td class="py-3 px-4">
-                  <span class="px-2 py-0.5 rounded bg-surface-container border border-outline-variant text-xs font-bold text-primary">
-                    {{ r.slot_number }}
-                  </span>
-                </td>
-                <td class="py-3 px-4 text-xs font-medium text-secondary">{{ r.entry_time }}</td>
-                <td class="py-3 px-4 text-xs font-medium text-secondary">
-                  {% if r.exit_time %}{{ r.exit_time }}{% else %}<span class="text-amber-600 font-bold">Still Parked</span>{% endif %}
-                </td>
-                <td class="py-3 px-4 text-right">
-                  <span class="px-2.5 py-1 rounded-full text-xs font-extrabold {% if r.status == 'PARKED' %}bg-amber-100 text-amber-900{% else %}bg-slate-100 text-slate-700{% endif %}">
-                    {{ r.status }}
-                  </span>
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    {% else %}
-      <div class="py-12 text-center text-secondary">
-        <span class="material-symbols-outlined text-4xl text-outline-variant mb-2">history</span>
-        <p class="text-base font-bold text-primary mb-1">No History Records Found</p>
-        <p class="text-xs font-medium">Try searching for a different license plate or check back later.</p>
-      </div>
-    {% endif %}
-  </div>
+<main class="space-y-xl">
+<!-- SECTION: Registered Vehicles -->
+<section class="max-w-6xl">
+<div class="flex justify-between items-end mb-md">
+<div>
+<h3 class="text-headline-md font-headline-md text-primary">Registered vehicles</h3>
+<p class="text-body-md text-secondary">Manage and monitor all vehicle permits on campus.</p>
 </div>
+<a href="{{ url_for('register') }}" class="bg-primary text-on-primary px-md py-base rounded-lg flex items-center gap-xs text-label-md font-label-md hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-[20px]" data-icon="add">add</span>
+Register Vehicle
+</a>
+</div>
+
+<!-- Search Form -->
+<form action="{{ url_for('history') }}" method="GET" class="mb-md flex gap-sm">
+<input type="text" name="q" value="{{ q }}" placeholder="Search vehicle plate..." class="px-md py-base bg-surface border border-outline-variant rounded-lg text-body-md uppercase font-bold w-64 focus:border-primary outline-none">
+<button type="submit" class="bg-primary text-on-primary px-md py-base rounded-lg text-label-md font-bold">Search</button>
+{% if q %}
+  <a href="{{ url_for('history') }}" class="px-md py-base border border-outline-variant rounded-lg text-label-md text-secondary">Clear</a>
+{% endif %}
+</form>
+</section>
+
+<!-- SECTION: Parking History -->
+<section class="max-w-6xl">
+<div class="flex flex-col md:flex-row md:items-center justify-between mb-lg gap-gutter">
+<div>
+<h3 class="text-headline-md font-headline-md text-primary">Parking history</h3>
+<p class="text-body-md text-secondary">Real-time log of campus parking occupancy.</p>
+</div>
+</div>
+
+<!-- Table Container -->
+<div class="bg-surface border border-outline-variant rounded-xl overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-outline-variant">
+<th class="px-gutter py-md text-label-sm text-secondary uppercase tracking-wider">Vehicle</th>
+<th class="px-gutter py-md text-label-sm text-secondary uppercase tracking-wider">Owner</th>
+<th class="px-gutter py-md text-label-sm text-secondary uppercase tracking-wider">Spot</th>
+<th class="px-gutter py-md text-label-sm text-secondary uppercase tracking-wider">Entry</th>
+<th class="px-gutter py-md text-label-sm text-secondary uppercase tracking-wider">Exit</th>
+<th class="px-gutter py-md text-label-sm text-secondary uppercase tracking-wider text-right">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+{% if rows %}
+  {% for r in rows %}
+  <tr class="hover:bg-surface-container-lowest transition-colors">
+  <td class="px-gutter py-md">
+  <div class="flex items-center gap-sm">
+  <div class="w-2 h-8 {% if r.status == 'PARKED' %}bg-primary{% else %}bg-secondary{% endif %} rounded-full"></div>
+  <div>
+  <p class="text-label-md font-bold text-primary">{{ r.vehicle_number }}</p>
+  </div>
+  </div>
+  </td>
+  <td class="px-gutter py-md text-body-md text-secondary">{{ r.owner }}</td>
+  <td class="px-gutter py-md text-body-md font-bold">{{ r.slot_number }}</td>
+  <td class="px-gutter py-md text-body-md">{{ r.entry_time }}</td>
+  <td class="px-gutter py-md text-body-md">{% if r.exit_time %}{{ r.exit_time }}{% else %}—{% endif %}</td>
+  <td class="px-gutter py-md text-right">
+  <span class="px-base py-xs {% if r.status == 'PARKED' %}bg-blue-50 text-blue-700 border border-blue-200{% else %}bg-green-50 text-green-700 border border-green-200{% endif %} text-[10px] font-bold rounded-full uppercase">
+    {% if r.status == 'PARKED' %}Active{% else %}Completed{% endif %}
+  </span>
+  </td>
+  </tr>
+  {% endfor %}
+{% else %}
+  <tr>
+  <td colspan="6" class="text-center py-xl text-secondary text-body-md">No parking log history available.</td>
+  </tr>
+{% endif %}
+</tbody>
+</table>
+</div>
+</div>
+</section>
+
+<!-- Dynamic Visualization (Bento Grid Style) -->
+<section class="max-w-6xl grid grid-cols-1 md:grid-cols-4 gap-gutter mt-xl pb-xl">
+<div class="md:col-span-2 bg-primary-container p-lg rounded-xl flex flex-col justify-between min-h-[200px]">
+<div class="flex justify-between items-start">
+<span class="text-on-primary text-label-sm uppercase tracking-widest font-bold opacity-60">Peak Hours</span>
+<span class="material-symbols-outlined text-on-primary" data-icon="trending_up">trending_up</span>
+</div>
+<div>
+<h2 class="text-[40px] font-black text-on-primary leading-tight">09:00 — 11:00</h2>
+<p class="text-on-primary opacity-80 text-body-md">Real-time Campus Monitoring</p>
+</div>
+</div>
+<div class="md:col-span-1 bg-surface border border-outline-variant p-lg rounded-xl flex flex-col justify-between">
+<span class="text-secondary text-label-sm uppercase font-bold">Total Logs</span>
+<div>
+<h2 class="text-display font-black text-primary">{{ rows|length }}</h2>
+<p class="text-secondary text-label-md">Recorded Sessions</p>
+</div>
+</div>
+<div class="md:col-span-1 relative overflow-hidden bg-surface border border-outline-variant p-lg rounded-xl flex flex-col justify-between">
+<span class="text-secondary text-label-sm uppercase font-bold relative z-10">Live Gate</span>
+<div class="relative z-10 flex items-center gap-xs">
+<div class="w-2 h-2 bg-error rounded-full animate-pulse"></div>
+<p class="text-primary text-label-sm font-bold uppercase">Main Gate A</p>
+</div>
+</div>
+</section>
+</main>
 {% endblock %}

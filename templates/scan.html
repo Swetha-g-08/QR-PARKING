@@ -1,49 +1,95 @@
 {% extends "admin_base.html" %}
 
-{% block title %}Scan Vehicle QR - CampusPark{% endblock %}
-{% block page_title %}Security QR Scanner{% endblock %}
+{% block title %}CampusPark - Scan QR{% endblock %}
+{% block page_title %}Scan QR{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto flex flex-col items-center">
-  <div class="w-full mb-6">
-    <h2 class="text-2xl font-black text-primary mb-1">Scan Parking QR Pass</h2>
-    <p class="text-sm font-medium text-secondary">Point camera at vehicle QR code to verify details and assign slot.</p>
-  </div>
+<style>
+  .scanner-line {
+      height: 2px;
+      background: #171717;
+      width: 100%;
+      position: absolute;
+      top: 0;
+      animation: scan 3s ease-in-out infinite;
+      opacity: 0.4;
+  }
+  @keyframes scan {
+      0%, 100% { top: 10%; }
+      50% { top: 90%; }
+  }
+  .focus-corner {
+      width: 32px;
+      height: 32px;
+      border-color: #171717;
+      position: absolute;
+  }
+</style>
 
-  <!-- Scanner Viewfinder Container -->
-  <div class="w-full max-w-md aspect-square bg-inverse-surface rounded-2xl border-2 border-outline-variant relative overflow-hidden flex flex-col items-center justify-center shadow-md mb-8">
-    <div id="reader" class="w-full h-full"></div>
+<div class="flex flex-col items-center justify-center min-h-[calc(100vh-140px)] max-w-7xl mx-auto">
+<div class="w-full max-w-2xl text-left mb-xl">
+<h2 class="text-headline-lg font-headline-lg text-primary mb-xs">Scan a parking QR</h2>
+<p class="text-body-lg font-body-lg text-secondary">Point the camera at the vehicle's QR code.</p>
+</div>
 
-    <div class="absolute inset-0 pointer-events-none flex flex-col justify-between p-6">
-      <div class="flex justify-between">
-        <div class="w-8 h-8 border-t-4 border-l-4 border-white rounded-tl-lg"></div>
-        <div class="w-8 h-8 border-t-4 border-r-4 border-white rounded-tr-lg"></div>
-      </div>
-      <div class="flex justify-between">
-        <div class="w-8 h-8 border-b-4 border-l-4 border-white rounded-bl-lg"></div>
-        <div class="w-8 h-8 border-b-4 border-r-4 border-white rounded-br-lg"></div>
-      </div>
-    </div>
-  </div>
+<!-- Scanner Area -->
+<div class="relative w-full max-w-md aspect-square bg-surface-container border border-outline-variant overflow-hidden group">
+<div id="reader" class="w-full h-full"></div>
 
-  <!-- Manual Lookup Section -->
-  <div class="w-full max-w-md bg-white border border-outline-variant rounded-2xl p-6 shadow-sm">
-    <label class="text-xs font-bold text-secondary uppercase tracking-wider block mb-2">Manual Lookup</label>
-    <div class="flex gap-2">
-      <input type="text" id="manual-search-input" 
-             placeholder="Enter vehicle number (e.g. TN38AB1234)" 
-             class="flex-1 bg-surface border border-outline-variant rounded-xl px-4 py-3 text-sm font-bold uppercase focus:border-primary focus:ring-0 outline-none">
-      <button type="button" onclick="manualSearch()" 
-              class="bg-primary text-on-primary px-5 py-3 rounded-xl text-sm font-bold hover:opacity-90 transition-opacity flex items-center justify-center">
-        <span class="material-symbols-outlined text-base">arrow_forward</span>
-      </button>
-    </div>
-  </div>
+<!-- Corner Markers -->
+<div class="focus-corner top-lg left-lg border-t-2 border-l-2 pointer-events-none"></div>
+<div class="focus-corner top-lg right-lg border-t-2 border-r-2 pointer-events-none"></div>
+<div class="focus-corner bottom-lg left-lg border-b-2 border-l-2 pointer-events-none"></div>
+<div class="focus-corner bottom-lg right-lg border-b-2 border-r-2 pointer-events-none"></div>
+
+<!-- Scanning Line -->
+<div class="scanner-line pointer-events-none"></div>
+
+<!-- Central Target -->
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+<div class="w-48 h-48 border border-white/20 rounded-lg"></div>
+</div>
+</div>
+
+<!-- Manual Entry Section -->
+<div class="mt-xl w-full max-w-md text-center">
+<p class="text-body-md font-body-md text-secondary mb-md">Having trouble? You can also enter the vehicle number manually.</p>
+<form onsubmit="manualSearch(event)" class="flex flex-col items-start w-full gap-xs">
+<label class="text-label-sm font-label-sm uppercase text-secondary tracking-wider">Vehicle Number</label>
+<div class="relative w-full">
+<input id="manual-input" class="w-full px-md py-base bg-transparent border border-outline-variant focus:border-primary focus:ring-0 transition-all text-body-md placeholder:text-outline outline-none uppercase font-bold" placeholder="[ Enter vehicle number ]" type="text"/>
+<button type="submit" class="absolute right-base top-1/2 -translate-y-1/2 p-xs hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-primary" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</form>
+</div>
+
+<!-- Practical Shortcuts (Grid Style) -->
+<div class="mt-xl grid grid-cols-1 md:grid-cols-2 gap-md w-full max-w-2xl">
+<div class="p-md border border-outline-variant bg-surface hover:bg-surface-container-lowest transition-all cursor-pointer flex items-start gap-md group">
+<div class="p-sm bg-surface-container-high rounded-lg group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined" data-icon="lightbulb">lightbulb</span>
+</div>
+<div>
+<h4 class="text-label-md font-bold text-primary">Scanning Tips</h4>
+<p class="text-label-sm text-secondary">Ensure there is adequate lighting and the QR code is not obscured by glare.</p>
+</div>
+</div>
+<div class="p-md border border-outline-variant bg-surface hover:bg-surface-container-lowest transition-all cursor-pointer flex items-start gap-md group">
+<div class="p-sm bg-surface-container-high rounded-lg group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined" data-icon="support_agent">support_agent</span>
+</div>
+<div>
+<h4 class="text-label-md font-bold text-primary">Need Help?</h4>
+<p class="text-label-sm text-secondary">Contact the transport office at ext. 550 for immediate parking assistance.</p>
+</div>
+</div>
+</div>
 </div>
 {% endblock %}
 
 {% block scripts %}
-<!-- html5-qrcode library -->
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
   function onScanSuccess(decodedText, decodedResult) {
@@ -58,12 +104,13 @@
 
   const html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
     fps: 10, 
-    qrbox: { width: 250, height: 250 } 
+    qrbox: { width: 220, height: 220 } 
   }, false);
   html5QrcodeScanner.render(onScanSuccess);
 
-  function manualSearch() {
-    const val = document.getElementById('manual-search-input').value.trim();
+  function manualSearch(e) {
+    e.preventDefault();
+    const val = document.getElementById('manual-input').value.trim();
     if (val) {
       window.location.href = "/history?q=" + encodeURIComponent(val);
     }

@@ -1,130 +1,186 @@
 {% extends "base.html" %}
 
-{% block title %}Live Parking Map - CampusPark{% endblock %}
+{% block title %}CampusPark | Find a Spot{% endblock %}
 
 {% block content %}
-<div class="space-y-8 py-4">
-  <!-- Header Section -->
-  <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
-    <div>
-      <h2 class="text-3xl font-black text-primary mb-1">Live Campus Parking Map</h2>
-      <p class="text-sm font-medium text-secondary">Real-time availability and slot status for students, staff, and visitors.</p>
-    </div>
-    <div class="text-right">
-      <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-900 text-xs font-bold">
-        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Live Sync Active
-      </span>
-    </div>
-  </div>
+<style>
+.parking-slot-active {
+    border-color: #171717 !important;
+    background-color: #FFFFFF !important;
+}
+</style>
 
-  <!-- Stats Overview -->
-  <section class="py-6 border-y border-outline-variant grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-    <div class="p-4 bg-white rounded-xl border border-outline-variant shadow-sm">
-      <p class="text-xs font-bold text-secondary uppercase tracking-wider mb-1">Available Spots</p>
-      <div class="flex items-baseline justify-center gap-2">
-        <span class="text-4xl font-black text-emerald-600" id="stat-free">{{ stats.free }}</span>
-        <span class="text-xs font-bold text-secondary">/ {{ stats.total }}</span>
-      </div>
-    </div>
+<div class="space-y-lg py-md">
+<!-- Dashboard Stats Row -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md mb-lg">
+<div class="bg-surface border border-outline-variant p-md rounded-xl flex items-center justify-between shadow-sm">
+<div>
+<p class="text-label-sm text-secondary uppercase tracking-widest mb-xs">Available Spots</p>
+<p class="text-display font-display text-primary">{{ stats.free }}</p>
+</div>
+<div class="w-12 h-12 bg-surface-container-low rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">check_circle</span>
+</div>
+</div>
+<div class="bg-surface border border-outline-variant p-md rounded-xl flex items-center justify-between shadow-sm">
+<div>
+<p class="text-label-sm text-secondary uppercase tracking-widest mb-xs">Occupied</p>
+<p class="text-display font-display text-error">{{ stats.occupied }}</p>
+</div>
+<div class="w-12 h-12 bg-error-container/20 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-error">cancel</span>
+</div>
+</div>
+<div class="bg-surface border border-outline-variant p-md rounded-xl flex items-center justify-between shadow-sm">
+<div>
+<p class="text-label-sm text-secondary uppercase tracking-widest mb-xs">Total Capacity</p>
+<p class="text-display font-display text-primary">{{ stats.total }}</p>
+</div>
+<div class="w-12 h-12 bg-surface-container-low rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">analytics</span>
+</div>
+</div>
+</div>
 
-    <div class="p-4 bg-white rounded-xl border border-outline-variant shadow-sm">
-      <p class="text-xs font-bold text-secondary uppercase tracking-wider mb-1">Currently Occupied</p>
-      <div class="flex items-baseline justify-center gap-2">
-        <span class="text-4xl font-black text-error" id="stat-occupied">{{ stats.occupied }}</span>
-        <span class="text-xs font-bold text-secondary">active</span>
-      </div>
-    </div>
+<!-- Main Layout Grid -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-lg">
+<!-- Map / Layout Section -->
+<div class="xl:col-span-8 bg-surface border border-outline-variant rounded-xl p-lg relative overflow-hidden shadow-sm">
+<div class="flex justify-between items-center mb-lg">
+<div>
+<h3 class="text-headline-lg font-display">Campus Zone A</h3>
+<p class="text-body-md text-secondary">Interactive parking floor plan</p>
+</div>
+<div class="flex gap-sm">
+<div class="flex items-center gap-xs">
+<span class="w-3 h-3 rounded-full border-2 border-primary"></span>
+<span class="text-label-sm text-secondary">Free</span>
+</div>
+<div class="flex items-center gap-xs">
+<span class="w-3 h-3 rounded-full bg-primary"></span>
+<span class="text-label-sm text-secondary">Occupied</span>
+</div>
+</div>
+</div>
 
-    <div class="p-4 bg-white rounded-xl border border-outline-variant shadow-sm">
-      <p class="text-xs font-bold text-secondary uppercase tracking-wider mb-1">Total Capacity</p>
-      <div class="flex items-baseline justify-center gap-2">
-        <span class="text-4xl font-black text-primary">{{ stats.total }}</span>
-        <span class="text-xs font-bold text-secondary">slots</span>
-      </div>
-    </div>
-  </section>
+<!-- Parking Layout Visualizer -->
+<div class="relative bg-surface-container-low rounded-xl p-lg min-h-[400px] flex flex-col justify-center items-center gap-xl border border-outline-variant/30">
+<!-- Dynamic Slots Grid -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-md w-full justify-center">
+{% for slot in slots %}
+<div class="parking-slot group cursor-pointer aspect-[3/4] border-2 rounded-lg flex flex-col items-center justify-between py-base transition-all p-2
+  {% if slot.status == 'FREE' %}
+    border-primary border-dashed hover:bg-white/50
+  {% else %}
+    bg-primary border-primary
+  {% endif %}" 
+  id="slot-{{ slot.slot_number }}" 
+  onclick="selectSlot('{{ slot.slot_number }}', {% if slot.status == 'OCCUPIED' %}true{% else %}false{% endif %}, '{{ slot.vehicle_number or "" }}', '{{ slot.vehicle_type or "" }}', '{{ slot.entry_time or "" }}')">
 
-  <!-- Live Visual Grid Map -->
-  <div class="bg-white border border-outline-variant rounded-2xl p-6 md:p-8 shadow-sm">
-    <div class="flex justify-between items-center mb-6">
-      <h3 class="text-xl font-bold text-primary">Parking Bays Overview</h3>
-      <div class="flex items-center gap-4 text-xs font-bold">
-        <div class="flex items-center gap-1.5">
-          <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
-          <span class="text-secondary">Free</span>
-        </div>
-        <div class="flex items-center gap-1.5">
-          <div class="w-3 h-3 rounded-full bg-error"></div>
-          <span class="text-secondary">Occupied</span>
-        </div>
-      </div>
-    </div>
+<span class="text-label-sm font-bold {% if slot.status == 'FREE' %}text-primary{% else %}text-on-primary{% endif %}">
+{{ slot.slot_number }}
+</span>
 
-    <!-- Entrance Indicator -->
-    <div class="w-full flex justify-center mb-6">
-      <div class="bg-primary text-on-primary px-4 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider shadow-sm">
-        ↓ Entrance Lane
-      </div>
-    </div>
+{% if slot.status == 'FREE' %}
+<span class="material-symbols-outlined text-primary opacity-20 group-hover:opacity-100 transition-opacity">add_circle</span>
+<span class="text-label-sm text-primary/40 uppercase">Free</span>
+{% else %}
+<div class="bg-on-primary/10 p-sm rounded-full">
+<span class="material-symbols-outlined text-on-primary">
+{% if slot.vehicle_type == 'Bike' %}two_wheeler{% else %}directions_car{% endif %}
+</span>
+</div>
+<span class="text-label-sm text-on-primary uppercase font-bold truncate max-w-full">{{ slot.vehicle_number or 'Occupied' }}</span>
+{% endif %}
+</div>
+{% endfor %}
+</div>
 
-    <!-- Parking Slots Grid -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4" id="slots-grid">
-      {% for slot in slots %}
-        <div class="p-4 rounded-xl border-2 transition-all flex flex-col items-center justify-center min-h-[110px] text-center
-          {% if slot.status == 'FREE' %}
-            border-emerald-200 bg-emerald-50/50 hover:border-emerald-500
-          {% else %}
-            border-error/40 bg-error-container/40
-          {% endif %}">
-          <span class="text-xs font-extrabold uppercase tracking-wider mb-1 {% if slot.status == 'FREE' %}text-emerald-900{% else %}text-on-error-container{% endif %}">
-            {{ slot.slot_number }}
-          </span>
+<!-- Central Lane -->
+<div class="w-full h-8 flex items-center justify-center overflow-hidden my-4">
+<div class="w-full border-t border-dashed border-outline-variant"></div>
+<span class="px-md text-label-sm text-outline font-bold tracking-widest whitespace-nowrap">MAIN ACCESS LANE</span>
+<div class="w-full border-t border-dashed border-outline-variant"></div>
+</div>
+</div>
+</div>
 
-          {% if slot.status == 'FREE' %}
-            <span class="material-symbols-outlined text-emerald-600 text-2xl mb-1">check_circle</span>
-            <span class="text-[11px] font-bold text-emerald-700">AVAILABLE</span>
-          {% else %}
-            <span class="material-symbols-outlined text-error text-2xl mb-1">
-              {% if slot.vehicle_type == 'Bike' %}pedal_bike{% else %}directions_car{% endif %}
-            </span>
-            <span class="text-[11px] font-extrabold text-error truncate max-w-full">{{ slot.vehicle_number }}</span>
-          {% endif %}
-        </div>
-      {% endfor %}
-    </div>
-  </div>
+<!-- Info Side Panel -->
+<div class="xl:col-span-4 flex flex-col gap-lg">
+<!-- Detail Card -->
+<div class="bg-surface border border-outline-variant rounded-xl p-md flex-1 shadow-sm" id="detail-panel">
+<div class="flex items-center gap-sm mb-lg border-b border-outline-variant pb-md">
+<span class="material-symbols-outlined text-primary">info</span>
+<h4 class="text-headline-md font-display">Slot Details</h4>
+</div>
+<div class="space-y-md" id="detail-content">
+<div class="flex flex-col items-center justify-center py-xl opacity-40 text-center">
+<span class="material-symbols-outlined text-display mb-base">stream_apps</span>
+<p class="text-body-md">Select a slot on the map to view real-time data</p>
+</div>
+</div>
+</div>
+</div>
+</div>
 </div>
 
 <script>
-  // AJAX Polling for Real-Time Parking Grid Updates
-  setInterval(async () => {
-    try {
-      const res = await fetch('/api/slots');
-      const data = await res.json();
-      
-      document.getElementById('stat-free').innerText = data.stats.free;
-      document.getElementById('stat-occupied').innerText = data.stats.occupied;
-      
-      const grid = document.getElementById('slots-grid');
-      grid.innerHTML = data.slots.map(slot => `
-        <div class="p-4 rounded-xl border-2 transition-all flex flex-col items-center justify-center min-h-[110px] text-center ${
-          slot.status === 'FREE' 
-            ? 'border-emerald-200 bg-emerald-50/50 hover:border-emerald-500' 
-            : 'border-error/40 bg-error-container/40'
-        }">
-          <span class="text-xs font-extrabold uppercase tracking-wider mb-1 ${slot.status === 'FREE' ? 'text-emerald-900' : 'text-on-error-container'}">
-            ${slot.slot_number}
-          </span>
-          ${
-            slot.status === 'FREE'
-              ? '<span class="material-symbols-outlined text-emerald-600 text-2xl mb-1">check_circle</span><span class="text-[11px] font-bold text-emerald-700">AVAILABLE</span>'
-              : `<span class="material-symbols-outlined text-error text-2xl mb-1">${slot.vehicle_type === 'Bike' ? 'pedal_bike' : 'directions_car'}</span><span class="text-[11px] font-extrabold text-error truncate max-w-full">${slot.vehicle_number || 'OCCUPIED'}</span>`
-          }
-        </div>
-      `).join('');
-    } catch (e) {
-      console.error('Polling error:', e);
+function selectSlot(id, occupied, vehicleNum, vehicleType, entryTime) {
+    document.querySelectorAll('.parking-slot').forEach(slot => {
+        slot.classList.remove('parking-slot-active');
+    });
+
+    const selected = document.getElementById(`slot-${id}`);
+    if (selected) selected.classList.add('parking-slot-active');
+
+    const panel = document.getElementById('detail-content');
+    
+    if (occupied) {
+        panel.innerHTML = `
+            <div class="flex items-center justify-between mb-md">
+                <span class="text-label-sm text-secondary uppercase font-bold tracking-tighter">Status</span>
+                <span class="px-sm py-xs bg-error text-on-error text-label-sm rounded-full font-bold">OCCUPIED</span>
+            </div>
+            <div class="space-y-md">
+                <div class="flex flex-col gap-xs p-md border border-outline-variant rounded-lg">
+                    <span class="text-label-sm text-secondary uppercase">Slot Identifier</span>
+                    <span class="text-headline-md font-display font-bold">${id}</span>
+                </div>
+                <div class="flex flex-col gap-xs p-md border border-outline-variant rounded-lg">
+                    <span class="text-label-sm text-secondary uppercase">Vehicle Info</span>
+                    <span class="text-body-lg font-bold">${vehicleNum || 'Parked Vehicle'}</span>
+                    <div class="flex items-center gap-xs text-label-sm text-secondary">
+                        <span class="material-symbols-outlined text-[16px]">${vehicleType === 'Bike' ? 'two_wheeler' : 'directions_car'}</span>
+                        Type: ${vehicleType || 'Vehicle'}
+                    </div>
+                </div>
+                <div class="flex flex-col gap-xs p-md border border-outline-variant rounded-lg">
+                    <span class="text-label-sm text-secondary uppercase">Entry Time</span>
+                    <span class="text-body-lg font-bold">${entryTime || 'N/A'}</span>
+                </div>
+            </div>
+        `;
+    } else {
+        panel.innerHTML = `
+            <div class="flex items-center justify-between mb-md">
+                <span class="text-label-sm text-secondary uppercase font-bold tracking-tighter">Status</span>
+                <span class="px-sm py-xs bg-primary text-on-primary text-label-sm rounded-full font-bold">AVAILABLE</span>
+            </div>
+            <div class="space-y-md">
+                <div class="flex flex-col gap-xs p-md border border-outline-variant rounded-lg">
+                    <span class="text-label-sm text-secondary uppercase">Slot Identifier</span>
+                    <span class="text-headline-md font-display font-bold">${id}</span>
+                </div>
+                <div class="flex flex-col gap-xs p-md border border-outline-variant rounded-lg">
+                    <span class="text-label-sm text-secondary uppercase">Pricing</span>
+                    <span class="text-body-lg font-bold">Free (Student Pass)</span>
+                </div>
+                <div class="p-md bg-surface-container-low rounded-lg border border-primary/10">
+                    <p class="text-label-sm text-secondary">This spot is currently available for your registered vehicle.</p>
+                </div>
+            </div>
+        `;
     }
-  }, 5000);
+}
 </script>
 {% endblock %}
