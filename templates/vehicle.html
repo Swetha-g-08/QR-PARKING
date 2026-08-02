@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}CampusPark | QR Verification{% endblock %}
+
+{% block content %}
+{% if valid %}
+<div class="page-head">
+  <h2>✅ VALID QR</h2>
+  <p>This QR code is registered and verified.</p>
+</div>
+
+<div class="card details-card verify-card">
+  <table class="detail-table">
+    <tr>
+      <td>Owner</td>
+      <td><strong>{{ vehicle['name'] }}</strong></td>
+    </tr>
+    <tr>
+      <td>College ID</td>
+      <td><strong>{{ vehicle['college_id'] }}</strong></td>
+    </tr>
+    <tr>
+      <td>Vehicle</td>
+      <td><strong>{{ vehicle['vehicle_number'] }}</strong></td>
+    </tr>
+    <tr>
+      <td>Type</td>
+      <td><strong>{{ vehicle['vehicle_type'] }}</strong></td>
+    </tr>
+    <tr>
+      <td>Parking Status</td>
+      <td>
+        {% if parked %}
+          <span class="badge badge-red">PARKED</span>
+        {% else %}
+          <span class="badge badge-green">NOT PARKED</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% if parked %}
+    <tr>
+      <td>Assigned Slot</td>
+      <td><span class="slot-chip occupied-chip">{{ parked['slot_number'] }}</span></td>
+    </tr>
+    <tr>
+      <td>Entry Time</td>
+      <td><strong>{{ parked['entry_time'] }}</strong></td>
+    </tr>
+    {% elif free_slot %}
+    <tr>
+      <td>Available Slot</td>
+      <td><span class="slot-chip free-chip">{{ free_slot['slot_number'] }}</span></td>
+    </tr>
+    {% else %}
+    <tr>
+      <td>Availability</td>
+      <td><span class="badge badge-red">PARKING FULL</span></td>
+    </tr>
+    {% endif %}
+  </table>
+
+  <div class="verify-actions">
+    {% if session.get('logged_in') %}
+      {% if parked %}
+        <form method="POST" action="{{ url_for('exit_vehicle', vehicle_id=vehicle['id']) }}">
+          <button type="submit" class="btn btn-danger btn-lg">🚪 EXIT VEHICLE</button>
+        </form>
+      {% elif free_slot %}
+        <form method="POST" action="{{ url_for('entry', vehicle_id=vehicle['id']) }}">
+          <button type="submit" class="btn btn-success btn-lg">✅ ALLOW ENTRY</button>
+        </form>
+      {% else %}
+        <div class="alert alert-danger">🚫 PARKING FULL — No parking slots are currently available.</div>
+      {% endif %}
+    {% else %}
+      <a href="{{ url_for('login', next=request.path) }}" class="btn btn-primary btn-lg">
+        Login to Allow Entry / Exit
+      </a>
+    {% endif %}
+  </div>
+</div>
+
+{% else %}
+<div class="card details-card verify-card invalid-card">
+  <div class="invalid-icon">❌</div>
+  <h2>INVALID QR CODE</h2>
+  <p>This QR code is not registered in the system.</p>
+  <a href="{{ url_for('index') }}" class="btn btn-outline">Back to Home</a>
+</div>
+{% endif %}
+{% endblock %}
+

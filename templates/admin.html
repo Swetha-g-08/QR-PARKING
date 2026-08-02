@@ -1,0 +1,73 @@
+{% extends "admin_base.html" %}
+
+{% block title %}CampusPark | Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h2>📊 Admin Dashboard</h2>
+  <p>Overview of vehicles, slots and live parking status.</p>
+</div>
+
+<div class="stats-row">
+  <div class="stat-card stat-total">
+    <span class="stat-value">{{ stats['total'] }}</span>
+    <span class="stat-label">TOTAL SLOTS</span>
+  </div>
+  <div class="stat-card stat-free">
+    <span class="stat-value">{{ stats['free'] }}</span>
+    <span class="stat-label">FREE SLOTS</span>
+  </div>
+  <div class="stat-card stat-occupied">
+    <span class="stat-value">{{ stats['occupied'] }}</span>
+    <span class="stat-label">OCCUPIED SLOTS</span>
+  </div>
+  <div class="stat-card stat-registered">
+    <span class="stat-value">{{ registered }}</span>
+    <span class="stat-label">REGISTERED VEHICLES</span>
+  </div>
+  <div class="stat-card stat-parked">
+    <span class="stat-value">{{ currently_parked }}</span>
+    <span class="stat-label">CURRENTLY PARKED</span>
+  </div>
+</div>
+
+<div class="card">
+  <h3 class="card-title">🚗 Current Vehicles</h3>
+  {% if current %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Vehicle Number</th>
+          <th>Owner</th>
+          <th>Type</th>
+          <th>Slot</th>
+          <th>Entry Time</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in current %}
+        <tr>
+          <td><strong>{{ row['vehicle_number'] }}</strong></td>
+          <td>{{ row['owner'] }}</td>
+          <td>{{ row['vehicle_type'] }}</td>
+          <td><span class="slot-chip occupied-chip">{{ row['slot_number'] }}</span></td>
+          <td>{{ row['entry_time'] }}</td>
+          <td><span class="badge badge-red">PARKED</span></td>
+          <td>
+            <a href="{{ url_for('verify_token', token=row['qr_token']) }}"
+               class="btn btn-sm btn-danger">EXIT</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty-state">No vehicles are currently parked.</p>
+  {% endif %}
+</div>
+{% endblock %}
+

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}CampusPark Admin{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="admin-body">
+  <div class="admin-layout">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span class="brand-icon">🅿️</span>
+        <span class="brand-text">CampusPark</span>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="{{ url_for('admin_dashboard') }}" class="sidebar-link">📊 Dashboard</a>
+        <a href="{{ url_for('scan') }}" class="sidebar-link">📷 QR Scanner</a>
+        <a href="{{ url_for('dashboard') }}" class="sidebar-link">🗺️ Parking Map</a>
+        <a href="{{ url_for('history') }}" class="sidebar-link">🕘 History</a>
+        <a href="{{ url_for('register') }}" class="sidebar-link">➕ Register</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="admin-chip">👤 {{ session.get('username', 'admin') }}</div>
+        <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline sidebar-logout">Logout</a>
+      </div>
+    </aside>
+
+    <main class="admin-main">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-stack">
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
+

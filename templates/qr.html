@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}CampusPark | Your QR Code{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h2>✅ Registration Successful</h2>
+  <p>Your parking QR code is ready. Show this at the parking entrance.</p>
+</div>
+
+<div class="qr-layout">
+  <div class="card qr-card">
+    <div class="qr-frame">
+      <img src="{{ url_for('static', filename='qr/' + qr_image) }}"
+           alt="Parking QR Code" class="qr-img">
+    </div>
+    <a href="{{ url_for('static', filename='qr/' + qr_image) }}" download
+       class="btn btn-primary btn-block">⬇️ Download QR</a>
+  </div>
+
+  <div class="card details-card">
+    <h3>Vehicle Details</h3>
+    <table class="detail-table">
+      <tr>
+        <td>Owner</td>
+        <td><strong>{{ vehicle['name'] }}</strong></td>
+      </tr>
+      <tr>
+        <td>College ID</td>
+        <td><strong>{{ vehicle['college_id'] }}</strong></td>
+      </tr>
+      <tr>
+        <td>Vehicle</td>
+        <td><strong>{{ vehicle['vehicle_number'] }}</strong></td>
+      </tr>
+      <tr>
+        <td>Type</td>
+        <td><strong>{{ vehicle['vehicle_type'] }}</strong></td>
+      </tr>
+      <tr>
+        <td>QR Status</td>
+        <td>
+          {% if status == 'PARKED' %}
+            <span class="badge badge-red">PARKED</span>
+          {% else %}
+            <span class="badge badge-green">ACTIVE</span>
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+
+    <a href="{{ url_for('dashboard') }}" class="btn btn-outline btn-block">View Parking Dashboard</a>
+  </div>
+</div>
+{% endblock %}
+

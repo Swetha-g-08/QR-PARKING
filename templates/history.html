@@ -1,0 +1,61 @@
+{% extends "admin_base.html" %}
+
+{% block title %}CampusPark | Parking History{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h2>🕘 Parking History</h2>
+  <p>Complete record of all vehicle entries and exits.</p>
+</div>
+
+<div class="card">
+  <form method="GET" action="{{ url_for('history') }}" class="search-bar">
+    <input type="text" name="q" value="{{ q }}" placeholder="Search by vehicle number…"
+           class="form-input">
+    <button type="submit" class="btn btn-primary">Search</button>
+    {% if q %}
+      <a href="{{ url_for('history') }}" class="btn btn-outline">Clear</a>
+    {% endif %}
+  </form>
+
+  {% if rows %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Vehicle Number</th>
+          <th>Owner</th>
+          <th>Slot</th>
+          <th>Entry Time</th>
+          <th>Exit Time</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td><strong>{{ row['vehicle_number'] }}</strong></td>
+          <td>{{ row['owner'] }}</td>
+          <td><span class="slot-chip free-chip">{{ row['slot_number'] }}</span></td>
+          <td>{{ row['entry_time'] }}</td>
+          <td>{{ row['exit_time'] if row['exit_time'] else '—' }}</td>
+          <td>
+            {% if row['status'] == 'PARKED' %}
+              <span class="badge badge-red">PARKED</span>
+            {% else %}
+              <span class="badge badge-green">EXITED</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty-state">
+    {% if q %}No records found for "{{ q }}".{% else %}No parking records yet.{% endif %}
+  </p>
+  {% endif %}
+</div>
+{% endblock %}
+

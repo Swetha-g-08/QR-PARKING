@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}CampusPark | Home{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="hero-content">
+    <span class="badge">College Mini-Project</span>
+    <h1>QR-Based College <span class="accent">Parking</span> Management System</h1>
+    <p>
+      A smart and simple way to manage college parking. Register your vehicle,
+      get a unique QR code, and let security scan it at the gate for instant
+      slot assignment — no manual registers, no confusion.
+    </p>
+    <div class="hero-actions">
+      <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">🚗 Register Vehicle</a>
+      <a href="{{ url_for('login') }}" class="btn btn-outline btn-lg">🔐 Security / Admin Login</a>
+      <a href="{{ url_for('dashboard') }}" class="btn btn-outline btn-lg">📊 Parking Dashboard</a>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <div class="parking-card-demo">
+      <div class="demo-slot free">A01<br><small>FREE</small></div>
+      <div class="demo-slot occupied">A02<br><small>OCCUPIED</small></div>
+      <div class="demo-slot free">A03<br><small>FREE</small></div>
+      <div class="demo-slot occupied">A04<br><small>OCCUPIED</small></div>
+      <div class="demo-slot free">B01<br><small>FREE</small></div>
+      <div class="demo-slot occupied">B02<br><small>OCCUPIED</small></div>
+    </div>
+  </div>
+</section>
+
+<section class="features">
+  <div class="feature-card">
+    <div class="feature-icon">📱</div>
+    <h3>Instant QR</h3>
+    <p>Every vehicle gets a unique QR code at registration.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">📷</div>
+    <h3>Camera Scan</h3>
+    <p>Security scans QR codes using the device camera.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">🅿️</div>
+    <h3>Auto Slot</h3>
+    <p>The first free slot is assigned automatically on entry.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">📊</div>
+    <h3>Live Dashboard</h3>
+    <p>Real-time parking availability for the whole campus.</p>
+  </div>
+</section>
+{% endblock %}
+

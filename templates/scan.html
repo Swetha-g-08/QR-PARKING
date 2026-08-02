@@ -1,0 +1,36 @@
+{% extends "admin_base.html" %}
+
+{% block title %}CampusPark | QR Scanner{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h2>📷 QR Scanner</h2>
+  <p>Point the camera at the parking QR code to verify the vehicle.</p>
+</div>
+
+<div class="card scan-card">
+  <div id="qr-reader"></div>
+  <div id="qr-result" class="scan-status">
+    <p>Waiting for QR code…</p>
+  </div>
+
+  <div class="manual-entry">
+    <p class="manual-title">No camera? Enter the token manually:</p>
+    <form method="GET" class="manual-form">
+      <input type="text" name="token" placeholder="Paste QR token here" class="form-input">
+      <button type="submit" class="btn btn-primary">Verify</button>
+    </form>
+  </div>
+</div>
+
+<div class="alert alert-info">
+  ℹ️ After scanning, you will be taken to the verification page where you can
+  <strong>ALLOW ENTRY</strong> or <strong>EXIT</strong> the vehicle.
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="{{ url_for('static', filename='js/scanner.js') }}"></script>
+{% endblock %}
+
