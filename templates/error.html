@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="card details-card verify-card invalid-card">
-  <div class="invalid-icon">⚠️</div>
+  <div class="invalid-icon"><span class="emoji">⚠️</span></div>
   <h2>{{ code }}</h2>
   <p>{{ message }}</p>
   <a href="{{ url_for('index') }}" class="btn btn-outline">Back to Home</a>
