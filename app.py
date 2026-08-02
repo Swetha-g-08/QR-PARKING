@@ -13,6 +13,7 @@ Then open:  http://127.0.0.1:5000
 """
 
 import os
+import socket
 import sqlite3
 import uuid
 from datetime import datetime
@@ -229,20 +230,47 @@ def release_slot(slot_id):
     db.commit()
 
 
+def get_local_ip():
+    """
+    Determines the local network LAN IP address of this machine.
+    Falls back to '127.0.0.1' if disconnected or detection fails.
+    """
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(0.5)
+        s.connect(("10.255.255.255", 1))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "127.0.0.1"
+
+
 def generate_qr(vehicle_id, qr_token):
     """
     Create a QR image file for a vehicle.
-    Uses PUBLIC_URL if set (e.g. Vercel URL or local IP), otherwise uses request host.
+    Uses BASE_URL / PUBLIC_URL / VERCEL_URL if provided, or automatically
+    resolves the local network LAN IP so mobile phones can connect over Wi-Fi.
     """
-    public_url = os.environ.get("PUBLIC_URL") or os.environ.get("VERCEL_URL")
-    if public_url:
-        if not public_url.startswith("http"):
-            public_url = "https://" + public_url
-        verify_url = f"{public_url.rstrip('/')}/verify/{qr_token}"
+    custom_base = (
+        os.environ.get("BASE_URL")
+        or os.environ.get("PUBLIC_URL")
+        or os.environ.get("VERCEL_URL")
+    )
+    if custom_base:
+        if not custom_base.startswith("http"):
+            custom_base = "https://" + custom_base
+        verify_url = f"{custom_base.rstrip('/')}/verify/{qr_token}"
     elif has_request_context():
-        verify_url = f"{request.host_url.rstrip('/')}/verify/{qr_token}"
+        host_url = request.host_url.rstrip("/")
+        # Replace loopback address with local LAN IP for phone scanner compatibility
+        if "127.0.0.1" in host_url or "localhost" in host_url:
+            local_ip = get_local_ip()
+            host_url = host_url.replace("127.0.0.1", local_ip).replace("localhost", local_ip)
+        verify_url = f"{host_url}/verify/{qr_token}"
     else:
-        verify_url = f"/verify/{qr_token}"
+        local_ip = get_local_ip()
+        verify_url = f"http://{local_ip}:5000/verify/{qr_token}"
 
     filename = f"vehicle_{vehicle_id}.png"
     os.makedirs(app.config["QR_FOLDER"], exist_ok=True)
@@ -734,5 +762,11 @@ def server_error(e):
 # Entry point
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    app.run(debug=True)
+    local_ip = get_local_ip()
+    print("\n=======================================================")
+    print(" CampusPark Server Starting...")
+    print(" Localhost:   http://127.0.0.1:5000")
+    print(f" LAN Network: http://{local_ip}:5000")
+    print("=======================================================\n")
+    app.run(host="0.0.0.0", port=5000, debug=True)
 
