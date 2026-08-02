@@ -1,56 +1,57 @@
 {% extends "base.html" %}
 
-{% block title %}CampusPark | Your QR Code{% endblock %}
+{% block title %}Parking Pass - {{ vehicle.vehicle_number }}{% endblock %}
 
 {% block content %}
-<div class="page-head">
-  <h2>✅ Registration Successful</h2>
-  <p>Your parking QR code is ready. Show this at the parking entrance.</p>
-</div>
-
-<div class="qr-layout">
-  <div class="card qr-card">
-    <div class="qr-frame">
-      <img src="{{ url_for('static', filename='qr/' + qr_image) }}"
-           alt="Parking QR Code" class="qr-img">
+<div class="max-w-md mx-auto py-6">
+  <!-- Card Container -->
+  <div class="bg-white border border-outline-variant rounded-2xl p-8 shadow-sm text-center relative overflow-hidden">
+    
+    <!-- Top Pass Header -->
+    <div class="flex justify-between items-center mb-6 border-b border-outline-variant pb-4">
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span class="text-xs font-extrabold uppercase tracking-wider text-secondary">Campus Parking Pass</span>
+      </div>
+      <span class="px-3 py-1 rounded-full text-xs font-bold {% if status == 'PARKED' %}bg-amber-100 text-amber-900{% else %}bg-emerald-100 text-emerald-900{% endif %}">
+        {{ status }}
+      </span>
     </div>
-    <a href="{{ url_for('static', filename='qr/' + qr_image) }}" download
-       class="btn btn-primary btn-block">⬇️ Download QR</a>
-  </div>
 
-  <div class="card details-card">
-    <h3>Vehicle Details</h3>
-    <table class="detail-table">
-      <tr>
-        <td>Owner</td>
-        <td><strong>{{ vehicle['name'] }}</strong></td>
-      </tr>
-      <tr>
-        <td>College ID</td>
-        <td><strong>{{ vehicle['college_id'] }}</strong></td>
-      </tr>
-      <tr>
-        <td>Vehicle</td>
-        <td><strong>{{ vehicle['vehicle_number'] }}</strong></td>
-      </tr>
-      <tr>
-        <td>Type</td>
-        <td><strong>{{ vehicle['vehicle_type'] }}</strong></td>
-      </tr>
-      <tr>
-        <td>QR Status</td>
-        <td>
-          {% if status == 'PARKED' %}
-            <span class="badge badge-red">PARKED</span>
-          {% else %}
-            <span class="badge badge-green">ACTIVE</span>
-          {% endif %}
-        </td>
-      </tr>
-    </table>
+    <!-- Owner & Vehicle Info -->
+    <div class="mb-6">
+      <h2 class="text-2xl font-black text-primary tracking-tight mb-1">{{ vehicle.vehicle_number }}</h2>
+      <p class="text-sm font-bold text-secondary">{{ vehicle.name }} <span class="text-xs font-normal">({{ vehicle.college_id }})</span></p>
+      <div class="inline-flex items-center gap-1.5 mt-2 px-3 py-1 bg-surface-container rounded-lg text-xs font-extrabold text-primary">
+        <span class="material-symbols-outlined text-sm">
+          {% if vehicle.vehicle_type == 'Bike' %}pedal_bike{% else %}directions_car{% endif %}
+        </span>
+        <span>{{ vehicle.vehicle_type }}</span>
+      </div>
+    </div>
 
-    <a href="{{ url_for('dashboard') }}" class="btn btn-outline btn-block">View Parking Dashboard</a>
+    <!-- QR Code Section -->
+    <div class="p-6 bg-surface-container-low border border-outline-variant rounded-2xl inline-block mb-6 shadow-inner">
+      <img src="{{ url_for('static', filename='qr/' + qr_image) }}" 
+           alt="Vehicle QR Code" 
+           class="w-56 h-56 object-contain rounded-lg mx-auto bg-white p-2">
+    </div>
+
+    <p class="text-xs text-secondary font-medium mb-6">
+      Show this QR code to the gate security officer upon entrance & exit.
+    </p>
+
+    <!-- Action Controls -->
+    <div class="grid grid-cols-2 gap-3">
+      <button onclick="window.print()" class="py-3 px-4 rounded-xl border border-primary text-primary font-bold text-sm hover:bg-surface-container transition-colors flex items-center justify-center gap-2">
+        <span class="material-symbols-outlined text-base">print</span>
+        <span>Print Pass</span>
+      </button>
+      <a href="{{ url_for('verify_token', token=vehicle.qr_token) }}" target="_blank" class="py-3 px-4 rounded-xl bg-primary text-on-primary font-bold text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+        <span class="material-symbols-outlined text-base">verified</span>
+        <span>Verify Live</span>
+      </a>
+    </div>
   </div>
 </div>
 {% endblock %}
-

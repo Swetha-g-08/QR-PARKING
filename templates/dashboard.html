@@ -1,88 +1,130 @@
 {% extends "base.html" %}
 
-{% block title %}CampusPark | Parking Dashboard{% endblock %}
+{% block title %}Live Parking Map - CampusPark{% endblock %}
 
 {% block content %}
-<div class="page-head">
-  <h2>📊 Parking Dashboard</h2>
-  <p>Live parking availability — updates automatically every 5 seconds.</p>
-</div>
+<div class="space-y-8 py-4">
+  <!-- Header Section -->
+  <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+    <div>
+      <h2 class="text-3xl font-black text-primary mb-1">Live Campus Parking Map</h2>
+      <p class="text-sm font-medium text-secondary">Real-time availability and slot status for students, staff, and visitors.</p>
+    </div>
+    <div class="text-right">
+      <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-900 text-xs font-bold">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Live Sync Active
+      </span>
+    </div>
+  </div>
 
-<div class="stats-row">
-  <div class="stat-card stat-total">
-    <span class="stat-value" id="stat-total">{{ stats['total'] }}</span>
-    <span class="stat-label">TOTAL SLOTS</span>
-  </div>
-  <div class="stat-card stat-free">
-    <span class="stat-value" id="stat-free">{{ stats['free'] }}</span>
-    <span class="stat-label">FREE</span>
-  </div>
-  <div class="stat-card stat-occupied">
-    <span class="stat-value" id="stat-occupied">{{ stats['occupied'] }}</span>
-    <span class="stat-label">OCCUPIED</span>
-  </div>
-</div>
-
-<div class="card">
-  <h3 class="card-title">🗺️ Parking Area</h3>
-  <div class="parking-grid" id="parking-grid">
-    {% for slot in slots %}
-      <div class="slot-card slot-{{ slot['status']|lower }}" data-slot="{{ slot['slot_number'] }}">
-        <div class="slot-number">{{ slot['slot_number'] }}</div>
-        <div class="slot-status">{{ slot['status'] }}</div>
-        {% if slot['status'] == 'OCCUPIED' and slot['vehicle_number'] %}
-          <div class="slot-info">
-            <div class="slot-vehicle">{{ slot['vehicle_number'] }}</div>
-            <div class="slot-type">{{ slot['vehicle_type'] }}</div>
-            <div class="slot-time">{{ slot['entry_time'] }}</div>
-          </div>
-        {% endif %}
+  <!-- Stats Overview -->
+  <section class="py-6 border-y border-outline-variant grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+    <div class="p-4 bg-white rounded-xl border border-outline-variant shadow-sm">
+      <p class="text-xs font-bold text-secondary uppercase tracking-wider mb-1">Available Spots</p>
+      <div class="flex items-baseline justify-center gap-2">
+        <span class="text-4xl font-black text-emerald-600" id="stat-free">{{ stats.free }}</span>
+        <span class="text-xs font-bold text-secondary">/ {{ stats.total }}</span>
       </div>
-    {% endfor %}
+    </div>
+
+    <div class="p-4 bg-white rounded-xl border border-outline-variant shadow-sm">
+      <p class="text-xs font-bold text-secondary uppercase tracking-wider mb-1">Currently Occupied</p>
+      <div class="flex items-baseline justify-center gap-2">
+        <span class="text-4xl font-black text-error" id="stat-occupied">{{ stats.occupied }}</span>
+        <span class="text-xs font-bold text-secondary">active</span>
+      </div>
+    </div>
+
+    <div class="p-4 bg-white rounded-xl border border-outline-variant shadow-sm">
+      <p class="text-xs font-bold text-secondary uppercase tracking-wider mb-1">Total Capacity</p>
+      <div class="flex items-baseline justify-center gap-2">
+        <span class="text-4xl font-black text-primary">{{ stats.total }}</span>
+        <span class="text-xs font-bold text-secondary">slots</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Live Visual Grid Map -->
+  <div class="bg-white border border-outline-variant rounded-2xl p-6 md:p-8 shadow-sm">
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="text-xl font-bold text-primary">Parking Bays Overview</h3>
+      <div class="flex items-center gap-4 text-xs font-bold">
+        <div class="flex items-center gap-1.5">
+          <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+          <span class="text-secondary">Free</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <div class="w-3 h-3 rounded-full bg-error"></div>
+          <span class="text-secondary">Occupied</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Entrance Indicator -->
+    <div class="w-full flex justify-center mb-6">
+      <div class="bg-primary text-on-primary px-4 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider shadow-sm">
+        ↓ Entrance Lane
+      </div>
+    </div>
+
+    <!-- Parking Slots Grid -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4" id="slots-grid">
+      {% for slot in slots %}
+        <div class="p-4 rounded-xl border-2 transition-all flex flex-col items-center justify-center min-h-[110px] text-center
+          {% if slot.status == 'FREE' %}
+            border-emerald-200 bg-emerald-50/50 hover:border-emerald-500
+          {% else %}
+            border-error/40 bg-error-container/40
+          {% endif %}">
+          <span class="text-xs font-extrabold uppercase tracking-wider mb-1 {% if slot.status == 'FREE' %}text-emerald-900{% else %}text-on-error-container{% endif %}">
+            {{ slot.slot_number }}
+          </span>
+
+          {% if slot.status == 'FREE' %}
+            <span class="material-symbols-outlined text-emerald-600 text-2xl mb-1">check_circle</span>
+            <span class="text-[11px] font-bold text-emerald-700">AVAILABLE</span>
+          {% else %}
+            <span class="material-symbols-outlined text-error text-2xl mb-1">
+              {% if slot.vehicle_type == 'Bike' %}pedal_bike{% else %}directions_car{% endif %}
+            </span>
+            <span class="text-[11px] font-extrabold text-error truncate max-w-full">{{ slot.vehicle_number }}</span>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
   </div>
 </div>
 
-<p class="dashboard-note">🟢 Green = FREE &nbsp;&nbsp;•&nbsp;&nbsp; 🔴 Red = OCCUPIED</p>
-{% endblock %}
-
-{% block scripts %}
 <script>
-// Lightweight AJAX polling every 5 seconds (no WebSockets needed).
-async function refreshSlots() {
-  try {
-    const res = await fetch("{{ url_for('api_slots') }}");
-    if (!res.ok) return;
-    const data = await res.json();
-
-    // Update statistics counters
-    document.getElementById("stat-total").textContent = data.stats.total;
-    document.getElementById("stat-free").textContent = data.stats.free;
-    document.getElementById("stat-occupied").textContent = data.stats.occupied;
-
-    // Rebuild the parking grid
-    const grid = document.getElementById("parking-grid");
-    let html = "";
-    for (const s of data.slots) {
-      const cls = "slot-card slot-" + s.status.toLowerCase();
-      html += `<div class="${cls}" data-slot="${s.slot_number}">`;
-      html += `<div class="slot-number">${s.slot_number}</div>`;
-      html += `<div class="slot-status">${s.status}</div>`;
-      if (s.status === "OCCUPIED" && s.vehicle_number) {
-        html += `<div class="slot-info">
-                   <div class="slot-vehicle">${s.vehicle_number}</div>
-                   <div class="slot-type">${s.vehicle_type}</div>
-                   <div class="slot-time">${s.entry_time}</div>
-                 </div>`;
-      }
-      html += `</div>`;
+  // AJAX Polling for Real-Time Parking Grid Updates
+  setInterval(async () => {
+    try {
+      const res = await fetch('/api/slots');
+      const data = await res.json();
+      
+      document.getElementById('stat-free').innerText = data.stats.free;
+      document.getElementById('stat-occupied').innerText = data.stats.occupied;
+      
+      const grid = document.getElementById('slots-grid');
+      grid.innerHTML = data.slots.map(slot => `
+        <div class="p-4 rounded-xl border-2 transition-all flex flex-col items-center justify-center min-h-[110px] text-center ${
+          slot.status === 'FREE' 
+            ? 'border-emerald-200 bg-emerald-50/50 hover:border-emerald-500' 
+            : 'border-error/40 bg-error-container/40'
+        }">
+          <span class="text-xs font-extrabold uppercase tracking-wider mb-1 ${slot.status === 'FREE' ? 'text-emerald-900' : 'text-on-error-container'}">
+            ${slot.slot_number}
+          </span>
+          ${
+            slot.status === 'FREE'
+              ? '<span class="material-symbols-outlined text-emerald-600 text-2xl mb-1">check_circle</span><span class="text-[11px] font-bold text-emerald-700">AVAILABLE</span>'
+              : `<span class="material-symbols-outlined text-error text-2xl mb-1">${slot.vehicle_type === 'Bike' ? 'pedal_bike' : 'directions_car'}</span><span class="text-[11px] font-extrabold text-error truncate max-w-full">${slot.vehicle_number || 'OCCUPIED'}</span>`
+          }
+        </div>
+      `).join('');
+    } catch (e) {
+      console.error('Polling error:', e);
     }
-    grid.innerHTML = html;
-  } catch (err) {
-    // Silent fail — the next poll will retry.
-  }
-}
-
-setInterval(refreshSlots, 5000);
+  }, 5000);
 </script>
 {% endblock %}
-

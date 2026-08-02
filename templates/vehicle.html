@@ -1,92 +1,98 @@
 {% extends "base.html" %}
 
-{% block title %}CampusPark | QR Verification{% endblock %}
+{% block title %}QR Pass Verification - CampusPark{% endblock %}
 
 {% block content %}
-{% if valid %}
-<div class="page-head">
-  <h2>✅ VALID QR</h2>
-  <p>This QR code is registered and verified.</p>
-</div>
+<div class="max-w-xl mx-auto py-8">
+  {% if valid %}
+    <!-- Valid QR Pass Screen -->
+    <div class="bg-white border border-outline-variant rounded-2xl p-8 shadow-sm space-y-6">
+      
+      <!-- Status Badge -->
+      <div class="flex justify-between items-center border-b border-outline-variant pb-4">
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="text-xs font-black text-emerald-800 uppercase tracking-wider">Verified QR Pass</span>
+        </div>
+        <span class="px-3 py-1 rounded-full text-xs font-extrabold {% if parked %}bg-amber-100 text-amber-900{% else %}bg-emerald-100 text-emerald-900{% endif %}">
+          {% if parked %}CURRENTLY PARKED (Bay {{ parked.slot_number }}){% else %}READY FOR ENTRY{% endif %}
+        </span>
+      </div>
 
-<div class="card details-card verify-card">
-  <table class="detail-table">
-    <tr>
-      <td>Owner</td>
-      <td><strong>{{ vehicle['name'] }}</strong></td>
-    </tr>
-    <tr>
-      <td>College ID</td>
-      <td><strong>{{ vehicle['college_id'] }}</strong></td>
-    </tr>
-    <tr>
-      <td>Vehicle</td>
-      <td><strong>{{ vehicle['vehicle_number'] }}</strong></td>
-    </tr>
-    <tr>
-      <td>Type</td>
-      <td><strong>{{ vehicle['vehicle_type'] }}</strong></td>
-    </tr>
-    <tr>
-      <td>Parking Status</td>
-      <td>
+      <!-- Vehicle Card -->
+      <div class="bg-surface-container-low border border-outline-variant rounded-xl p-6 flex justify-between items-center">
+        <div>
+          <span class="text-xs font-bold text-secondary uppercase tracking-wider block mb-1">Vehicle License Plate</span>
+          <h2 class="text-3xl font-black text-primary tracking-tight">{{ vehicle.vehicle_number }}</h2>
+          <p class="text-sm font-bold text-secondary mt-1">{{ vehicle.name }} <span class="text-xs font-normal">({{ vehicle.college_id }})</span></p>
+        </div>
+        <div class="w-14 h-14 rounded-2xl bg-white border border-outline-variant flex items-center justify-center text-primary shadow-sm">
+          <span class="material-symbols-outlined text-3xl">
+            {% if vehicle.vehicle_type == 'Bike' %}pedal_bike{% else %}directions_car{% endif %}
+          </span>
+        </div>
+      </div>
+
+      <!-- Entry / Exit Actions -->
+      <div class="space-y-4 pt-2">
         {% if parked %}
-          <span class="badge badge-red">PARKED</span>
+          <!-- Vehicle is Parked -> Allow Exit -->
+          <div class="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-sm font-medium">
+            Vehicle entered at <strong>{{ parked.entry_time }}</strong> into Parking Bay <strong>{{ parked.slot_number }}</strong>.
+          </div>
+
+          {% if session.get('logged_in') %}
+            <form action="{{ url_for('exit_vehicle', vehicle_id=vehicle.id) }}" method="POST">
+              <button type="submit" class="w-full bg-error text-on-error py-4 px-6 rounded-xl font-bold text-base hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-sm">
+                <span class="material-symbols-outlined text-lg">logout</span>
+                <span>Checkout & Release Slot {{ parked.slot_number }}</span>
+              </button>
+            </form>
+          {% else %}
+            <div class="text-center p-3 bg-surface-container rounded-xl text-xs font-bold text-secondary">
+              Security login required to record exit.
+            </div>
+          {% endif %}
+
         {% else %}
-          <span class="badge badge-green">NOT PARKED</span>
+          <!-- Vehicle is NOT Parked -> Allow Entry -->
+          {% if free_slot %}
+            <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 text-sm font-medium">
+              Next Available Spot: <strong class="text-emerald-950 font-black text-base">Bay {{ free_slot.slot_number }}</strong>
+            </div>
+
+            {% if session.get('logged_in') %}
+              <form action="{{ url_for('entry', vehicle_id=vehicle.id) }}" method="POST">
+                <button type="submit" class="w-full bg-primary text-on-primary py-4 px-6 rounded-xl font-bold text-base hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-sm">
+                  <span class="material-symbols-outlined text-lg">login</span>
+                  <span>Allow Entry → Assign Slot {{ free_slot.slot_number }}</span>
+                </button>
+              </form>
+            {% else %}
+              <div class="text-center p-3 bg-surface-container rounded-xl text-xs font-bold text-secondary">
+                Security login required to record entry.
+              </div>
+            {% endif %}
+
+          {% else %}
+            <div class="p-4 bg-red-50 border border-red-200 rounded-xl text-red-900 text-sm font-bold text-center">
+              ⚠️ PARKING FULL: No available slots.
+            </div>
+          {% endif %}
         {% endif %}
-      </td>
-    </tr>
-    {% if parked %}
-    <tr>
-      <td>Assigned Slot</td>
-      <td><span class="slot-chip occupied-chip">{{ parked['slot_number'] }}</span></td>
-    </tr>
-    <tr>
-      <td>Entry Time</td>
-      <td><strong>{{ parked['entry_time'] }}</strong></td>
-    </tr>
-    {% elif free_slot %}
-    <tr>
-      <td>Available Slot</td>
-      <td><span class="slot-chip free-chip">{{ free_slot['slot_number'] }}</span></td>
-    </tr>
-    {% else %}
-    <tr>
-      <td>Availability</td>
-      <td><span class="badge badge-red">PARKING FULL</span></td>
-    </tr>
-    {% endif %}
-  </table>
+      </div>
 
-  <div class="verify-actions">
-    {% if session.get('logged_in') %}
-      {% if parked %}
-        <form method="POST" action="{{ url_for('exit_vehicle', vehicle_id=vehicle['id']) }}">
-          <button type="submit" class="btn btn-danger btn-lg">🚪 EXIT VEHICLE</button>
-        </form>
-      {% elif free_slot %}
-        <form method="POST" action="{{ url_for('entry', vehicle_id=vehicle['id']) }}">
-          <button type="submit" class="btn btn-success btn-lg">✅ ALLOW ENTRY</button>
-        </form>
-      {% else %}
-        <div class="alert alert-danger">🚫 PARKING FULL — No parking slots are currently available.</div>
-      {% endif %}
-    {% else %}
-      <a href="{{ url_for('login', next=request.path) }}" class="btn btn-primary btn-lg">
-        Login to Allow Entry / Exit
-      </a>
-    {% endif %}
-  </div>
+    </div>
+  {% else %}
+    <!-- Invalid QR Screen -->
+    <div class="bg-white border border-error/30 rounded-2xl p-8 shadow-sm text-center space-y-4">
+      <div class="w-16 h-16 rounded-full bg-error-container text-error flex items-center justify-center mx-auto">
+        <span class="material-symbols-outlined text-4xl">error</span>
+      </div>
+      <h2 class="text-2xl font-black text-primary">Invalid QR Pass</h2>
+      <p class="text-sm font-medium text-secondary">This QR token is not recognized in the CampusPark system database.</p>
+      <a href="{{ url_for('register') }}" class="inline-block px-6 py-3 bg-primary text-on-primary font-bold text-sm rounded-xl">Register Vehicle</a>
+    </div>
+  {% endif %}
 </div>
-
-{% else %}
-<div class="card details-card verify-card invalid-card">
-  <div class="invalid-icon">❌</div>
-  <h2>INVALID QR CODE</h2>
-  <p>This QR code is not registered in the system.</p>
-  <a href="{{ url_for('index') }}" class="btn btn-outline">Back to Home</a>
-</div>
-{% endif %}
 {% endblock %}
-

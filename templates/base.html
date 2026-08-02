@@ -1,55 +1,141 @@
 <!DOCTYPE html>
-<html lang="en">
+<html class="light" lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}QR College Parking{% endblock %}</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}CampusPark - Smart College Parking{% endblock %}</title>
+  
+  <!-- Tailwind CSS & Google Fonts -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface": "#fdf8f8",
+            "surface-dim": "#ddd9d8",
+            "surface-bright": "#fdf8f8",
+            "surface-container-lowest": "#ffffff",
+            "surface-container-low": "#f7f3f2",
+            "surface-container": "#f1edec",
+            "surface-container-high": "#ebe7e6",
+            "surface-container-highest": "#e5e2e1",
+            "on-surface": "#1c1b1b",
+            "on-surface-variant": "#444748",
+            "inverse-surface": "#313030",
+            "inverse-on-surface": "#f4f0ef",
+            "outline": "#747878",
+            "outline-variant": "#c4c7c7",
+            "primary": "#171717",
+            "on-primary": "#ffffff",
+            "secondary": "#5e5e5e",
+            "on-secondary": "#ffffff",
+            "error": "#ba1a1a",
+            "on-error": "#ffffff",
+            "error-container": "#ffdad6",
+            "on-error-container": "#93000a"
+          },
+          fontFamily: {
+            display: ["Manrope", "sans-serif"],
+            body: ["Manrope", "sans-serif"]
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    body {
+      font-family: 'Manrope', sans-serif;
+      background-color: #fdf8f8;
+      color: #1c1b1b;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+  </style>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
-<body>
-  <nav class="navbar">
-    <div class="nav-container">
-      <a href="{{ url_for('index') }}" class="brand">
-        <span class="brand-icon">🅿️</span>
-        <span class="brand-text">CampusPark</span>
-      </a>
-      <div class="nav-links">
-        <a href="{{ url_for('index') }}">Home</a>
-        <a href="{{ url_for('register') }}">Register</a>
-        <a href="{{ url_for('dashboard') }}">Dashboard</a>
-        {% if session.get('logged_in') %}
-          <a href="{{ url_for('admin_dashboard') }}">Admin</a>
-          <a href="{{ url_for('scan') }}">Scanner</a>
-          <a href="{{ url_for('history') }}">History</a>
-          <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline">Logout</a>
-        {% else %}
-          <a href="{{ url_for('login') }}" class="btn btn-sm btn-primary">Admin Login</a>
-        {% endif %}
-      </div>
-    </div>
-  </nav>
+<body class="bg-surface text-on-surface min-h-screen flex flex-col justify-between">
 
-  <main class="container">
+  <!-- Main Navigation Header -->
+  <header class="bg-surface border-b border-outline-variant sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-lg py-sm flex justify-between items-center">
+      <a href="{{ url_for('index') }}" class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-primary text-on-primary flex items-center justify-center font-black text-xl shadow-sm">
+          🅿️
+        </div>
+        <div>
+          <h1 class="text-headline-md font-extrabold text-primary leading-tight">CampusPark</h1>
+          <p class="text-xs text-secondary font-medium tracking-wide">Smart College Parking</p>
+        </div>
+      </a>
+
+      <nav class="flex items-center gap-2">
+        <a href="{{ url_for('index') }}" class="px-3 py-2 rounded-lg text-sm font-semibold text-secondary hover:text-primary hover:bg-surface-container transition-colors">Home</a>
+        <a href="{{ url_for('register') }}" class="px-3 py-2 rounded-lg text-sm font-semibold text-secondary hover:text-primary hover:bg-surface-container transition-colors">Register</a>
+        <a href="{{ url_for('dashboard') }}" class="px-3 py-2 rounded-lg text-sm font-semibold text-secondary hover:text-primary hover:bg-surface-container transition-colors">Live Map</a>
+        
+        {% if session.get('logged_in') %}
+          <a href="{{ url_for('admin_dashboard') }}" class="px-3 py-2 rounded-lg text-sm font-semibold text-primary bg-surface-container border border-outline-variant hover:bg-surface-container-high transition-colors">Admin Console</a>
+          <a href="{{ url_for('scan') }}" class="px-3 py-2 rounded-lg text-sm font-semibold text-primary hover:bg-surface-container transition-colors">Scanner</a>
+          <a href="{{ url_for('history') }}" class="px-3 py-2 rounded-lg text-sm font-semibold text-secondary hover:text-primary hover:bg-surface-container transition-colors">History</a>
+          <a href="{{ url_for('logout') }}" class="ml-2 px-3 py-2 rounded-lg text-sm font-bold text-error hover:bg-error-container transition-colors">Logout</a>
+        {% else %}
+          <a href="{{ url_for('login') }}" class="ml-2 px-4 py-2 rounded-xl text-sm font-bold bg-primary text-on-primary hover:opacity-90 transition-opacity">Admin Login</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <!-- Flash Notification Stack -->
+  <div class="max-w-4xl mx-auto w-full px-lg mt-4">
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
-        <div class="flash-stack">
+        <div class="space-y-2">
           {% for category, message in messages %}
-            <div class="alert alert-{{ category }}">{{ message }}</div>
+            <div class="p-4 rounded-xl border flex items-center gap-3 text-sm font-semibold shadow-sm transition-all
+              {% if category == 'success' %} bg-emerald-50 border-emerald-200 text-emerald-900
+              {% elif category == 'danger' %} bg-red-50 border-red-200 text-red-900
+              {% elif category == 'warning' %} bg-amber-50 border-amber-200 text-amber-900
+              {% else %} bg-surface-container border-outline-variant text-primary {% endif %}">
+              <span class="material-symbols-outlined text-lg">
+                {% if category == 'success' %}check_circle
+                {% elif category == 'danger' %}error
+                {% elif category == 'warning' %}warning
+                {% else %}info{% endif %}
+              </span>
+              <span>{{ message }}</span>
+            </div>
           {% endfor %}
         </div>
       {% endif %}
     {% endwith %}
+  </div>
 
+  <!-- Main Content Container -->
+  <main class="flex-1 w-full max-w-7xl mx-auto px-lg py-md">
     {% block content %}{% endblock %}
   </main>
 
-  <footer class="footer">
-    <p>QR-Based College Parking Management System &copy; 2025</p>
+  <!-- Footer -->
+  <footer class="bg-surface-container-lowest border-t border-outline-variant py-md mt-xl">
+    <div class="max-w-7xl mx-auto px-lg flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-medium text-secondary">
+      <div>
+        © 2025 <strong class="text-primary font-bold">CampusPark Systems</strong>. Smart QR Parking Management System.
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> System Live & Operational
+        </span>
+      </div>
+    </div>
   </footer>
 
   {% block scripts %}{% endblock %}
 </body>
 </html>
-

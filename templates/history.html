@@ -1,61 +1,73 @@
 {% extends "admin_base.html" %}
 
-{% block title %}CampusPark | Parking History{% endblock %}
+{% block title %}Parking History - CampusPark{% endblock %}
+{% block page_title %}Vehicles & History Logs{% endblock %}
 
 {% block content %}
-<div class="page-head">
-  <h2>🕘 Parking History</h2>
-  <p>Complete record of all vehicle entries and exits.</p>
-</div>
-
-<div class="card">
-  <form method="GET" action="{{ url_for('history') }}" class="search-bar">
-    <input type="text" name="q" value="{{ q }}" placeholder="Search by vehicle number…"
-           class="form-input">
-    <button type="submit" class="btn btn-primary">Search</button>
-    {% if q %}
-      <a href="{{ url_for('history') }}" class="btn btn-outline">Clear</a>
-    {% endif %}
-  </form>
-
-  {% if rows %}
-  <div class="table-wrap">
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>Vehicle Number</th>
-          <th>Owner</th>
-          <th>Slot</th>
-          <th>Entry Time</th>
-          <th>Exit Time</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in rows %}
-        <tr>
-          <td><strong>{{ row['vehicle_number'] }}</strong></td>
-          <td>{{ row['owner'] }}</td>
-          <td><span class="slot-chip free-chip">{{ row['slot_number'] }}</span></td>
-          <td>{{ row['entry_time'] }}</td>
-          <td>{{ row['exit_time'] if row['exit_time'] else '—' }}</td>
-          <td>
-            {% if row['status'] == 'PARKED' %}
-              <span class="badge badge-red">PARKED</span>
-            {% else %}
-              <span class="badge badge-green">EXITED</span>
-            {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+<div class="space-y-6">
+  <!-- Search Bar -->
+  <div class="bg-white border border-outline-variant rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
+    <h3 class="text-lg font-bold text-primary">Parking Records</h3>
+    
+    <form action="{{ url_for('history') }}" method="GET" class="flex gap-2 w-full sm:w-auto">
+      <input type="text" name="q" value="{{ q }}" placeholder="Search by vehicle plate..." 
+             class="bg-surface border border-outline-variant rounded-xl px-4 py-2 text-sm font-bold uppercase focus:border-primary focus:ring-0 outline-none w-full sm:w-64">
+      <button type="submit" class="bg-primary text-on-primary px-4 py-2 rounded-xl text-sm font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-1">
+        <span class="material-symbols-outlined text-base">search</span>
+        <span>Search</span>
+      </button>
+      {% if q %}
+        <a href="{{ url_for('history') }}" class="px-3 py-2 border border-outline-variant rounded-xl text-xs font-bold text-secondary hover:bg-surface-container flex items-center">Clear</a>
+      {% endif %}
+    </form>
   </div>
-  {% else %}
-  <p class="empty-state">
-    {% if q %}No records found for "{{ q }}".{% else %}No parking records yet.{% endif %}
-  </p>
-  {% endif %}
+
+  <!-- Records Table -->
+  <div class="bg-white border border-outline-variant rounded-2xl p-6 shadow-sm">
+    {% if rows %}
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead>
+            <tr class="border-b border-outline-variant text-xs uppercase text-secondary font-bold">
+              <th class="py-3 px-4">Vehicle Plate</th>
+              <th class="py-3 px-4">Owner</th>
+              <th class="py-3 px-4">Bay</th>
+              <th class="py-3 px-4">Entry Time</th>
+              <th class="py-3 px-4">Exit Time</th>
+              <th class="py-3 px-4 text-right">Status</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-outline-variant">
+            {% for r in rows %}
+              <tr class="hover:bg-surface-container-low transition-colors">
+                <td class="py-3 px-4 font-extrabold text-primary">{{ r.vehicle_number }}</td>
+                <td class="py-3 px-4 font-medium text-secondary">{{ r.owner }}</td>
+                <td class="py-3 px-4">
+                  <span class="px-2 py-0.5 rounded bg-surface-container border border-outline-variant text-xs font-bold text-primary">
+                    {{ r.slot_number }}
+                  </span>
+                </td>
+                <td class="py-3 px-4 text-xs font-medium text-secondary">{{ r.entry_time }}</td>
+                <td class="py-3 px-4 text-xs font-medium text-secondary">
+                  {% if r.exit_time %}{{ r.exit_time }}{% else %}<span class="text-amber-600 font-bold">Still Parked</span>{% endif %}
+                </td>
+                <td class="py-3 px-4 text-right">
+                  <span class="px-2.5 py-1 rounded-full text-xs font-extrabold {% if r.status == 'PARKED' %}bg-amber-100 text-amber-900{% else %}bg-slate-100 text-slate-700{% endif %}">
+                    {{ r.status }}
+                  </span>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="py-12 text-center text-secondary">
+        <span class="material-symbols-outlined text-4xl text-outline-variant mb-2">history</span>
+        <p class="text-base font-bold text-primary mb-1">No History Records Found</p>
+        <p class="text-xs font-medium">Try searching for a different license plate or check back later.</p>
+      </div>
+    {% endif %}
+  </div>
 </div>
 {% endblock %}
-

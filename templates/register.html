@@ -1,49 +1,100 @@
 {% extends "base.html" %}
 
-{% block title %}CampusPark | Register Vehicle{% endblock %}
+{% block title %}Register Vehicle - CampusPark{% endblock %}
 
 {% block content %}
-<div class="page-head">
-  <h2>🚗 Vehicle Registration</h2>
-  <p>Register your vehicle to receive a unique parking QR code.</p>
-</div>
+<div class="max-w-2xl mx-auto py-md">
+  <!-- Header Text -->
+  <div class="mb-lg">
+    <h1 class="text-3xl font-extrabold text-primary mb-2">Register Your Vehicle</h1>
+    <p class="text-base text-secondary font-medium">It only takes a minute. We'll generate a secure personal parking QR code for your vehicle.</p>
+  </div>
 
-<div class="card form-card">
-  <form method="POST" action="{{ url_for('register') }}" autocomplete="off">
-    <div class="form-group">
-      <label for="name">Student / Staff Name</label>
-      <input type="text" id="name" name="name" placeholder="e.g. AJ" required>
+  <!-- Registration Form -->
+  <form class="space-y-6" action="{{ url_for('register') }}" method="POST">
+    <!-- Vehicle Type Selection -->
+    <div class="space-y-2">
+      <label class="text-xs font-bold text-secondary uppercase tracking-wider block">Vehicle Type</label>
+      <input type="hidden" name="vehicle_type" id="vehicle_type_input" value="Bike">
+      
+      <div class="grid grid-cols-2 gap-4">
+        <button type="button" id="btn-bike" onclick="selectVehicle('Bike')"
+                class="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-primary bg-white shadow-sm transition-all group">
+          <span class="material-symbols-outlined text-4xl mb-2 group-hover:scale-110 transition-transform">pedal_bike</span>
+          <span class="text-sm font-extrabold text-primary">Bike / Two-Wheeler</span>
+        </button>
+
+        <button type="button" id="btn-car" onclick="selectVehicle('Car')"
+                class="flex flex-col items-center justify-center p-6 rounded-xl border border-outline-variant bg-surface hover:bg-white transition-all group">
+          <span class="material-symbols-outlined text-4xl mb-2 text-secondary group-hover:scale-110 transition-transform">directions_car</span>
+          <span class="text-sm font-bold text-secondary">Car / Four-Wheeler</span>
+        </button>
+      </div>
     </div>
 
-    <div class="form-group">
-      <label for="college_id">College ID</label>
-      <input type="text" id="college_id" name="college_id" placeholder="e.g. 23CSE001" required>
+    <!-- Input Fields Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+      <div class="space-y-1.5">
+        <label class="text-xs font-bold text-secondary uppercase tracking-wider block" for="name">Full Name</label>
+        <input class="w-full bg-white border border-outline-variant rounded-xl px-4 py-3 text-sm font-medium focus:border-primary focus:ring-0 outline-none transition-colors"
+               id="name" name="name" placeholder="e.g. Swetha G" required type="text"/>
+      </div>
+
+      <div class="space-y-1.5">
+        <label class="text-xs font-bold text-secondary uppercase tracking-wider block" for="college_id">College / Staff ID</label>
+        <input class="w-full bg-white border border-outline-variant rounded-xl px-4 py-3 text-sm font-medium focus:border-primary focus:ring-0 outline-none transition-colors"
+               id="college_id" name="college_id" placeholder="e.g. C-29384" required type="text"/>
+      </div>
+
+      <div class="space-y-1.5">
+        <label class="text-xs font-bold text-secondary uppercase tracking-wider block" for="email">Email Address</label>
+        <input class="w-full bg-white border border-outline-variant rounded-xl px-4 py-3 text-sm font-medium focus:border-primary focus:ring-0 outline-none transition-colors"
+               id="email" name="email" placeholder="e.g. student@college.edu" required type="email"/>
+      </div>
+
+      <div class="space-y-1.5">
+        <label class="text-xs font-bold text-secondary uppercase tracking-wider block" for="vehicle_number">Vehicle License Plate</label>
+        <input class="w-full bg-white border border-outline-variant rounded-xl px-4 py-3 text-sm font-extrabold uppercase focus:border-primary focus:ring-0 outline-none transition-colors"
+               id="vehicle_number" name="vehicle_number" placeholder="e.g. TN38AB1234" required type="text"/>
+      </div>
     </div>
 
-    <div class="form-group">
-      <label for="email">Email</label>
-      <input type="email" id="email" name="email" placeholder="e.g. aj@college.edu" required>
+    <!-- Action Button -->
+    <div class="pt-4">
+      <button type="submit" class="w-full bg-primary text-on-primary py-4 px-6 rounded-xl font-bold text-base hover:opacity-90 active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-sm">
+        <span>Generate Parking QR Pass</span>
+        <span class="material-symbols-outlined text-lg">arrow_forward</span>
+      </button>
+      <p class="text-center mt-4 text-xs text-secondary font-medium">
+        By registering, your vehicle is assigned to the campus parking database.
+      </p>
     </div>
-
-    <div class="form-group">
-      <label for="vehicle_number">Vehicle Number</label>
-      <input type="text" id="vehicle_number" name="vehicle_number" placeholder="e.g. TN38AB1234"
-             required maxlength="15"
-             oninput="this.value = this.value.toUpperCase()">
-      <small class="hint">Auto-converted to uppercase. Must be unique.</small>
-    </div>
-
-    <div class="form-group">
-      <label for="vehicle_type">Vehicle Type</label>
-      <select id="vehicle_type" name="vehicle_type" required>
-        <option value="" disabled selected>Select type</option>
-        <option value="Bike">🏍️ Bike</option>
-        <option value="Car">🚗 Car</option>
-      </select>
-    </div>
-
-    <button type="submit" class="btn btn-primary btn-block btn-lg">Register &amp; Generate QR</button>
   </form>
 </div>
-{% endblock %}
 
+<script>
+  function selectVehicle(type) {
+    document.getElementById('vehicle_type_input').value = type;
+    const bikeBtn = document.getElementById('btn-bike');
+    const carBtn = document.getElementById('btn-car');
+    
+    if (type === 'Bike') {
+      bikeBtn.className = "flex flex-col items-center justify-center p-6 rounded-xl border-2 border-primary bg-white shadow-sm transition-all group";
+      bikeBtn.querySelector('span:first-child').className = "material-symbols-outlined text-4xl mb-2 text-primary group-hover:scale-110 transition-transform";
+      bikeBtn.querySelector('span:last-child').className = "text-sm font-extrabold text-primary";
+      
+      carBtn.className = "flex flex-col items-center justify-center p-6 rounded-xl border border-outline-variant bg-surface hover:bg-white transition-all group";
+      carBtn.querySelector('span:first-child').className = "material-symbols-outlined text-4xl mb-2 text-secondary group-hover:scale-110 transition-transform";
+      carBtn.querySelector('span:last-child').className = "text-sm font-bold text-secondary";
+    } else {
+      carBtn.className = "flex flex-col items-center justify-center p-6 rounded-xl border-2 border-primary bg-white shadow-sm transition-all group";
+      carBtn.querySelector('span:first-child').className = "material-symbols-outlined text-4xl mb-2 text-primary group-hover:scale-110 transition-transform";
+      carBtn.querySelector('span:last-child').className = "text-sm font-extrabold text-primary";
+      
+      bikeBtn.className = "flex flex-col items-center justify-center p-6 rounded-xl border border-outline-variant bg-surface hover:bg-white transition-all group";
+      bikeBtn.querySelector('span:first-child').className = "material-symbols-outlined text-4xl mb-2 text-secondary group-hover:scale-110 transition-transform";
+      bikeBtn.querySelector('span:last-child').className = "text-sm font-bold text-secondary";
+    }
+  }
+</script>
+{% endblock %}

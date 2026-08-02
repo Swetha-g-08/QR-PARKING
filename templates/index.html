@@ -1,56 +1,67 @@
 {% extends "base.html" %}
 
-{% block title %}CampusPark | Home{% endblock %}
+{% block title %}CampusPark - Smart College Parking Management System{% endblock %}
 
 {% block content %}
-<section class="hero">
-  <div class="hero-content">
-    <span class="badge">College Mini-Project</span>
-    <h1>QR-Based College <span class="accent">Parking</span> Management System</h1>
-    <p>
-      A smart and simple way to manage college parking. Register your vehicle,
-      get a unique QR code, and let security scan it at the gate for instant
-      slot assignment — no manual registers, no confusion.
+<div class="space-y-16 py-8">
+  <!-- Hero Section -->
+  <section class="text-center max-w-3xl mx-auto space-y-6">
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container border border-outline-variant text-xs font-bold text-secondary">
+      <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Smart QR Access & Real-Time Slot Tracking
+    </div>
+    
+    <h1 class="text-4xl md:text-5xl font-black text-primary tracking-tight leading-tight">
+      Effortless College Parking with QR Verification
+    </h1>
+
+    <p class="text-lg text-secondary font-medium leading-relaxed">
+      CampusPark simplifies vehicle registration, automates entrance verification, and monitors live parking slot occupancy for students and faculty.
     </p>
-    <div class="hero-actions">
-      <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">🚗 Register Vehicle</a>
-      <a href="{{ url_for('login') }}" class="btn btn-outline btn-lg">🔐 Security / Admin Login</a>
-      <a href="{{ url_for('dashboard') }}" class="btn btn-outline btn-lg">📊 Parking Dashboard</a>
-    </div>
-  </div>
-  <div class="hero-visual">
-    <div class="parking-card-demo">
-      <div class="demo-slot free">A01<br><small>FREE</small></div>
-      <div class="demo-slot occupied">A02<br><small>OCCUPIED</small></div>
-      <div class="demo-slot free">A03<br><small>FREE</small></div>
-      <div class="demo-slot occupied">A04<br><small>OCCUPIED</small></div>
-      <div class="demo-slot free">B01<br><small>FREE</small></div>
-      <div class="demo-slot occupied">B02<br><small>OCCUPIED</small></div>
-    </div>
-  </div>
-</section>
 
-<section class="features">
-  <div class="feature-card">
-    <div class="feature-icon">📱</div>
-    <h3>Instant QR</h3>
-    <p>Every vehicle gets a unique QR code at registration.</p>
-  </div>
-  <div class="feature-card">
-    <div class="feature-icon">📷</div>
-    <h3>Camera Scan</h3>
-    <p>Security scans QR codes using the device camera.</p>
-  </div>
-  <div class="feature-card">
-    <div class="feature-icon">🅿️</div>
-    <h3>Auto Slot</h3>
-    <p>The first free slot is assigned automatically on entry.</p>
-  </div>
-  <div class="feature-card">
-    <div class="feature-icon">📊</div>
-    <h3>Live Dashboard</h3>
-    <p>Real-time parking availability for the whole campus.</p>
-  </div>
-</section>
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+      <a href="{{ url_for('register') }}" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-primary text-on-primary font-bold text-base hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-sm">
+        <span>Register Vehicle & Get QR</span>
+        <span class="material-symbols-outlined text-lg">arrow_forward</span>
+      </a>
+
+      <a href="{{ url_for('dashboard') }}" class="w-full sm:w-auto px-8 py-4 rounded-xl border border-outline-variant bg-white text-primary font-bold text-base hover:bg-surface-container transition-all flex items-center justify-center gap-2">
+        <span class="material-symbols-outlined text-lg">map</span>
+        <span>View Live Map</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- Feature Grid -->
+  <section class="grid grid-cols-1 md:grid-cols-3 gap-8">
+    <div class="p-8 bg-white border border-outline-variant rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+      <div class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center mb-6">
+        <span class="material-symbols-outlined text-primary text-2xl">qr_code_2</span>
+      </div>
+      <h3 class="text-xl font-bold text-primary mb-2">Instant QR Pass</h3>
+      <p class="text-sm text-secondary leading-relaxed">
+        Register your vehicle once and receive a unique QR code pass that security can verify in seconds.
+      </p>
+    </div>
+
+    <div class="p-8 bg-white border border-outline-variant rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+      <div class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center mb-6">
+        <span class="material-symbols-outlined text-primary text-2xl">pin_drop</span>
+      </div>
+      <h3 class="text-xl font-bold text-primary mb-2">Automated Slot Assignment</h3>
+      <p class="text-sm text-secondary leading-relaxed">
+        System automatically assigns the nearest available parking bay (A01-B10) upon entrance scan.
+      </p>
+    </div>
+
+    <div class="p-8 bg-white border border-outline-variant rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+      <div class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center mb-6">
+        <span class="material-symbols-outlined text-primary text-2xl">security</span>
+      </div>
+      <h3 class="text-xl font-bold text-primary mb-2">Security Console</h3>
+      <p class="text-sm text-secondary leading-relaxed">
+        Security personnel can scan QR codes via mobile camera to log vehicle entry and exit seamlessly.
+      </p>
+    </div>
+  </section>
+</div>
 {% endblock %}
-
