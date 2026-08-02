@@ -1,268 +1,175 @@
-# QR-Based College Parking Management System
+# QR-Based College Parking Management System (CampusPark)
 
-A smart college parking system where students/staff register their vehicles and
-receive a unique **QR code**. Security personnel scan the QR at the parking gate
-to verify the vehicle, assign a free slot automatically, and record entry/exit —
-all in real time.
+A production-ready, full-stack college parking management platform. Students and staff register their vehicles to receive a unique **QR code pass**. Security personnel scan the QR pass at campus gates to verify identity, automatically allocate available parking bays (`A01`–`B10`), and record vehicle entry/exit in real time.
 
-![Stack](https://img.shields.io/badge/Backend-Flask-blue)
-![Stack](https://img.shields.io/badge/Database-SQLite-green)
-![Stack](https://img.shields.io/badge/Frontend-HTML%20%2F%20CSS%20%2F%20JS-orange)
-
----
-
-## Features
-
-- 🚗 **Vehicle Registration** — students/staff register name, college ID, email,
-  vehicle number and type (Bike / Car).
-- 🔒 **Unique QR Code** — each vehicle gets a unique UUID token; the QR contains
-  only a safe verify URL (no personal data embedded inside).
-- 📷 **Camera QR Scanner** — security scans codes with the device camera
-  (`html5-qrcode`), with a manual token fallback.
-- ✅ **QR Verification** — instantly shows owner, college ID, vehicle number,
-  type, and current parking status.
-- 🅿️ **Automatic Slot Assignment** — the first free slot (A01 → B10) is assigned
-  on entry; slot changes `FREE → OCCUPIED`.
-- 🚪 **Vehicle Exit** — one click releases the slot and changes
-  `OCCUPIED → FREE`, closing the parking record.
-- 🚫 **Duplicate Entry Prevention** — a vehicle already parked cannot be given
-  another slot.
-- 🛑 **Parking Full Handling** — when all 20 slots are occupied, entry is
-  gracefully blocked.
-- 📊 **Live Dashboard** — total / free / occupied counters and a visual parking
-  grid, auto-refreshed every 5 seconds via lightweight AJAX polling
-  (`/api/slots`).
-- 🔐 **Admin Panel** — statistics, currently parked vehicles with **EXIT**
-  buttons, parking history with search.
-- 🕘 **Parking History** — full entry/exit log, searchable by vehicle number.
-- 🛡️ **Secure by Default** — hashed admin password, parameterized SQL queries,
-  server-side validation, no stack traces shown to users.
+![Stack](https://img.shields.io/badge/Production-Vercel-black?logo=vercel)
+![Stack](https://img.shields.io/badge/Backend-Flask-blue?logo=flask)
+![Stack](https://img.shields.io/badge/Database-Supabase%20PostgreSQL-emerald?logo=supabase)
+![Stack](https://img.shields.io/badge/Local%20DB-SQLite-green?logo=sqlite)
+![Stack](https://img.shields.io/badge/Frontend-HTML5%20%2F%20TailwindCSS%20%2F%20JS-orange)
 
 ---
 
-## Installation
+## 🚀 Live Demo
 
-### 1. Create a virtual environment
+- **Vercel Production Deployment**: [https://qr-parking-eta.vercel.app](https://qr-parking-eta.vercel.app)
+- **Database**: Supabase Transaction Pooler (PostgreSQL)
 
+---
+
+## ✨ Features
+
+- 🚗 **Vehicle Registration** — Register student/faculty name, college ID, email, vehicle plate number, and type (Car / Bike).
+- 🔒 **Environment-Aware QR Generation** — Dynamically bakes production domain (`https://qr-parking-eta.vercel.app/verify/<token>`) or local network IP for seamless mobile phone camera scanning.
+- 🅿️ **Automated Slot Allocation** — Scanning a QR pass automatically assigns the nearest available parking bay (`A01` → `B10`) via atomic database updates (`FREE` → `OCCUPIED`).
+- 🛡️ **Double Allocation Prevention** — Prevents active parked vehicles from being assigned duplicate parking spots.
+- 🚪 **One-Touch Vehicle Exit** — Security personnel can check out vehicles, closing entry logs and marking slots as `FREE`.
+- 📊 **Real-Time Interactive Dashboard** — Live floor map with slot availability metrics and automatic AJAX polling (`/api/slots`).
+- 🔄 **Admin Reset Parking Data** — Admin-only Danger Zone feature to clear daily parking logs and reset slots to `FREE` while preserving registered users, vehicles, and admin credentials.
+- 📷 **Webcam & Mobile QR Scanner** — Real-time camera scanning via `html5-qrcode` with manual token fallback.
+- 📱 **Apple/iOS-Style Native Emoji Fallbacks** — Cross-platform `.emoji` font stack combined with Google Material Symbols vector icons.
+
+---
+
+## 🔐 Admin Login Credentials
+
+| Username | Password |
+| :--- | :--- |
+| `admin` | `admin123` |
+
+> *Admin passwords are securely hashed using `werkzeug.security`.*
+
+---
+
+## 🛠️ Tech Stack & Architecture
+
+```text
+       Mobile / Desktop Browser
+                  │
+                  ▼
+         Vercel Serverless (Flask)
+                  │
+        ┌─────────┴─────────┐
+        ▼                   ▼
+Supabase PostgreSQL   SQLite (Local Dev)
+ (Production Pooler)     (parking.db)
+```
+
+- **Backend**: Python 3.12, Flask, Gunicorn, `psycopg2-binary`, `python-dotenv`.
+- **Database Abstraction (`UnifiedDB`)**: Unified SQL wrapper supporting both PostgreSQL and SQLite. Handles placeholder translation (`?` ↔ `%s`) and row mapping.
+- **Frontend**: Jinja2 Templates, Tailwind CSS, Google Material Symbols, HTML5 Camera API.
+
+---
+
+## 💻 Local Development Setup
+
+### 1. Clone the repository
+```bash
+git clone https://github.com/Swetha-g-08/QR-PARKING.git
+cd QR-PARKING
+```
+
+### 2. Create and activate a virtual environment
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 ```
+*(On Windows: `venv\Scripts\activate`)*
 
-> On Windows: `venv\Scripts\activate`
-
-### 2. Install dependencies
-
+### 3. Install dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Run the application
+### 4. Configure Environment Variables (`.env`)
+Create a `.env` file in the project root:
+```env
+BASE_URL="http://127.0.0.1:5000"
+SECRET_KEY="campuspark-local-secret-key"
+# Optional: Set DATABASE_URL to connect to Supabase PostgreSQL locally
+# DATABASE_URL="postgresql://user:pass@host:6543/postgres"
+```
 
+### 5. Run the application
 ```bash
 python app.py
 ```
-
-### 4. Open the app
-
-```
-http://127.0.0.1:5000
-```
+Open [http://127.0.0.1:5000](http://127.0.0.1:5000) in your browser.
 
 ---
 
-## Admin Login
+## 📂 Database Schema
 
-| Username | Password   |
-| -------- | ---------- |
-| `admin`  | `admin123` |
-
-> The password is **hashed** (via `werkzeug.security`) and stored in SQLite.
-> The default admin is created automatically on first run.
-
----
-
-## Project Architecture
-
-```
-Frontend (HTML + CSS + JS)
-        │
-        ▼
-   Flask (Python)
-        │
-        ▼
-   SQLite (parking.db)
-```
-
-- **Frontend** — Jinja2 templates, modern CSS, and `html5-qrcode` for camera
-  scanning. The dashboard polls `/api/slots` every 5 seconds (no WebSockets).
-- **Backend** — Flask routes handle registration, verification, entry/exit and
-  admin actions. All state-changing operations use **POST** requests.
-- **Database** — a single SQLite file (`parking.db`) stores users, vehicles,
-  parking slots and parking records.
-
----
-
-## Database Structure
+The database consists of 5 core tables:
 
 ### `users`
-
-| Column      | Type    | Notes               |
-| ----------- | ------- | ------------------- |
-| id          | INTEGER | PK, auto-increment  |
-| name        | TEXT    | Owner name          |
-| college_id  | TEXT    | UNIQUE              |
-| email       | TEXT    |                     |
-| created_at  | TEXT    | Timestamp           |
+- `id` (PK, Serial/Integer)
+- `name` (Text)
+- `college_id` (Text, Unique)
+- `email` (Text)
+- `created_at` (Timestamp)
 
 ### `vehicles`
-
-| Column         | Type    | Notes               |
-| -------------- | ------- | ------------------- |
-| id             | INTEGER | PK, auto-increment  |
-| user_id        | INTEGER | FK → users.id       |
-| vehicle_number | TEXT    | UNIQUE              |
-| vehicle_type   | TEXT    | Bike / Car          |
-| qr_token       | TEXT    | UNIQUE, UUID        |
-| created_at     | TEXT    | Timestamp           |
+- `id` (PK, Serial/Integer)
+- `user_id` (FK → `users.id`)
+- `vehicle_number` (Text, Unique)
+- `vehicle_type` (Text: `Car` or `Bike`)
+- `qr_token` (Text, Unique UUID)
+- `created_at` (Timestamp)
 
 ### `parking_slots`
-
-| Column      | Type    | Notes                    |
-| ----------- | ------- | ------------------------ |
-| id          | INTEGER | PK, auto-increment       |
-| slot_number | TEXT    | UNIQUE (A01 … B10)       |
-| status      | TEXT    | `FREE` or `OCCUPIED`     |
-| vehicle_id  | INTEGER | FK → vehicles.id (or NULL) |
-
-> 20 slots are seeded automatically: **A01–A10** and **B01–B10**, all `FREE`.
+- `id` (PK, Serial/Integer)
+- `slot_number` (Text, Unique: `A01`–`B10`)
+- `status` (Text: `FREE` or `OCCUPIED`)
+- `vehicle_id` (FK → `vehicles.id`, Nullable)
 
 ### `parking_records`
-
-| Column     | Type    | Notes                    |
-| ---------- | ------- | ------------------------ |
-| id         | INTEGER | PK, auto-increment       |
-| vehicle_id | INTEGER | FK → vehicles.id         |
-| slot_id    | INTEGER | FK → parking_slots.id    |
-| entry_time | TEXT    | Timestamp                |
-| exit_time  | TEXT    | NULL while parked        |
-| status     | TEXT    | `PARKED` or `EXITED`     |
+- `id` (PK, Serial/Integer)
+- `vehicle_id` (FK → `vehicles.id`)
+- `slot_id` (FK → `parking_slots.id`)
+- `entry_time` (Timestamp)
+- `exit_time` (Timestamp, Nullable)
+- `status` (Text: `PARKED` or `EXITED`)
 
 ### `admin_users`
-
-| Column        | Type    | Notes                   |
-| ------------- | ------- | ----------------------- |
-| id            | INTEGER | PK, auto-increment      |
-| username      | TEXT    | UNIQUE (default: admin) |
-| password_hash | TEXT    | Hashed password         |
+- `id` (PK, Serial/Integer)
+- `username` (Text, Unique)
+- `password_hash` (Text)
 
 ---
 
-## How QR Parking Works
+## ⚡ Key API & Flask Routes
 
-```
-Registration
-     │
-     ▼
-QR Generation
-     │
-     ▼
-QR Scan (camera)
-     │
-     ▼
-Verification
-     │
-     ▼
-Slot Assignment (first FREE slot)
-     │
-     ▼
-FREE ──────────────► OCCUPIED
-     │
-     ▼
-Vehicle Exit
-     │
-     ▼
-OCCUPIED ───────────► FREE
-```
-
-### Demo Flow
-
-1. **Student** opens `/register` and registers:
-   - Name: `AJ` • College ID: `23CSE001` • Vehicle: `TN38AB1234` • Type: `Bike`
-2. **System** generates a unique QR code (saved in `static/qr/`).
-3. **Security** opens `/scan` and points the camera at the QR.
-4. **System** shows `VALID QR` with owner, vehicle, and the available slot.
-5. **Security** clicks **ALLOW ENTRY** → the slot becomes `OCCUPIED` and an
-   entry record is created.
-6. **Dashboard** updates in real time: `Free: 19`, `Occupied: 1`.
-7. When the vehicle leaves, **Security** clicks **EXIT** → the slot becomes
-   `FREE` again.
+| Route | Method | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `/` | `GET` | Public | Landing page & feature showcase |
+| `/register` | `GET/POST` | Public | Register vehicle & generate QR pass |
+| `/qr/<vehicle_id>` | `GET` | Public | View vehicle QR pass |
+| `/verify/<token>` | `GET` | Public | QR scan landing route & auto-slot allocation |
+| `/dashboard` | `GET` | Public | Interactive parking floor map & live counters |
+| `/login` / `/logout` | `GET/POST` | Public | Admin authentication |
+| `/admin` | `GET` | Admin | Security console & Danger Zone controls |
+| `/admin/reset-parking` | `POST` | Admin | Atomic transaction to reset slots & history |
+| `/scan` | `GET` | Admin | Webcam QR scanner page |
+| `/exit/<vehicle_id>` | `POST` | Admin | Release parking slot & record checkout |
+| `/history` | `GET` | Admin | Complete searchable parking history logs |
+| `/api/slots` | `GET` | Public | Lightweight JSON endpoint for slot map polling |
 
 ---
 
-## Key Flask Routes
+## 🌐 Deployment to Vercel
 
-| Route                  | Method   | Description                            |
-| ---------------------- | -------- | -------------------------------------- |
-| `/`                    | GET      | Landing page                           |
-| `/register`            | GET/POST | Vehicle registration                   |
-| `/qr/<vehicle_id>`     | GET      | Show generated QR code                 |
-| `/verify/<token>`      | GET      | Public QR verification page            |
-| `/login` `/logout`     | GET/POST | Admin authentication                  |
-| `/dashboard`           | GET      | Public live parking map                |
-| `/admin`               | GET      | Admin dashboard (login required)       |
-| `/scan`                | GET      | Camera QR scanner (login required)     |
-| `/entry/<vehicle_id>`  | POST     | Allow entry + assign slot (login req.) |
-| `/exit/<vehicle_id>`   | POST     | Release slot + close record (login req.)|
-| `/history`             | GET      | Parking history with search (login)    |
-| `/api/slots`           | GET      | JSON slot data for AJAX polling        |
-| `/api/vehicle/<id>`    | GET      | JSON status of a single vehicle        |
+1. Push your repository to GitHub.
+2. Import the project in the [Vercel Dashboard](https://vercel.com).
+3. Configure the following **Environment Variables**:
+   - `BASE_URL`: `https://qr-parking-eta.vercel.app`
+   - `DATABASE_URL`: `postgresql://<user>:<password>@<pooler-host>:6543/postgres`
+   - `SECRET_KEY`: `<your-random-secret-key>`
+4. Deploy! Vercel uses `api/index.py` and `vercel.json` to run the serverless Flask app.
 
 ---
 
-## Project Structure
+## 📜 License & Acknowledgments
 
-```
-qr-parking-system/
-│
-├── app.py
-├── requirements.txt
-├── parking.db            (created automatically)
-├── README.md
-│
-├── templates/
-│   ├── base.html
-│   ├── index.html
-│   ├── register.html
-│   ├── qr.html
-│   ├── login.html
-│   ├── dashboard.html
-│   ├── vehicle.html
-│   ├── scan.html
-│   ├── admin.html
-│   ├── admin_base.html
-│   ├── history.html
-│   └── error.html
-│
-└── static/
-    ├── css/
-    │   └── style.css
-    ├── js/
-    │   └── scanner.js
-    └── qr/               (generated QR images)
-```
-
----
-
-## Notes for the Demo
-
-- The QR scanner needs **camera access** — use a phone or a laptop with a webcam
-  on `http://127.0.0.1:5000/scan`.
-- If no camera is available, paste the QR token manually on the scanner page.
-- The dashboard updates every **5 seconds** using AJAX polling — refresh the
-  page anytime for an instant manual update.
-
----
-
-*Made as a college mini-project. Python + Flask + SQLite + QR.*
-
+Built for Smart Campus Mobility & QR-Based College Parking Systems.
+Powered by Python, Flask, Supabase PostgreSQL, and Vercel.
