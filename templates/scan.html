@@ -93,13 +93,19 @@
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
   function onScanSuccess(decodedText, decodedResult) {
-    if (decodedText.startsWith("http://") || decodedText.startsWith("https://")) {
-      window.location.href = decodedText;
-    } else if (decodedText.startsWith("/verify/")) {
-      window.location.href = decodedText;
-    } else {
-      window.location.href = "/verify/" + encodeURIComponent(decodedText);
+    console.log("QR Code scanned:", decodedText);
+    let token = decodedText.trim();
+    
+    // Extract token if decodedText contains /verify/ or is a URL
+    if (token.includes('/verify/')) {
+      const parts = token.split('/verify/');
+      token = parts[parts.length - 1].split('?')[0].split('#')[0];
+    } else if (token.startsWith('http://') || token.startsWith('https://')) {
+      const urlParts = token.split('/');
+      token = urlParts[urlParts.length - 1].split('?')[0].split('#')[0];
     }
+    
+    window.location.href = "/verify/" + encodeURIComponent(token);
   }
 
   const html5QrcodeScanner = new Html5QrcodeScanner("reader", { 

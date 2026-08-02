@@ -22,6 +22,7 @@ from flask import (
     abort,
     flash,
     g,
+    has_request_context,
     jsonify,
     redirect,
     render_template,
@@ -75,7 +76,7 @@ def get_db():
 @app.teardown_appcontext
 def close_db(exc):
     """Close the database connection when the request ends."""
-    db = g.pop("db", None)
+    db = getattr(g, "db", None)
     if db is not None:
         db.close()
 
@@ -230,11 +231,16 @@ def release_slot(slot_id):
 
 def generate_qr(vehicle_id, qr_token):
     """
-    Create a QR image file for a vehicle. The QR contains only the public
-    verify URL (no sensitive personal data inside the QR itself).
+    Create a QR image file for a vehicle. The QR contains the public
+    verify URL.
     """
-    verify_url = url_for("verify_token", token=qr_token, _external=True)
+    if has_request_context():
+        verify_url = request.host_url.rstrip('/') + url_for("verify_token", token=qr_token)
+    else:
+        verify_url = f"/verify/{qr_token}"
+
     filename = f"vehicle_{vehicle_id}.png"
+    os.makedirs(app.config["QR_FOLDER"], exist_ok=True)
     path = os.path.join(app.config["QR_FOLDER"], filename)
 
     img = qrcode.make(verify_url)
@@ -386,6 +392,9 @@ def show_qr(vehicle_id):
 
     # The QR image file is saved as static/qr/vehicle_<id>.png
     qr_image = f"vehicle_{vehicle['id']}.png"
+    qr_path = os.path.join(app.config["QR_FOLDER"], qr_image)
+    if not os.path.exists(qr_path):
+        generate_qr(vehicle["id"], vehicle["qr_token"])
 
     return render_template("qr.html", vehicle=vehicle, qr_image=qr_image, status=status)
 
