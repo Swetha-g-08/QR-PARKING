@@ -58,16 +58,76 @@ os.makedirs(QR_FOLDER, exist_ok=True)
 
 _DB_INITIALIZED = False
 
-# ---------------------------------------------------------------------------
-# Database helpers
-# ---------------------------------------------------------------------------
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+class UnifiedCursor:
+    def __init__(self, cursor, is_postgres=False):
+        self.cursor = cursor
+        self.is_postgres = is_postgres
+        self.lastrowid = getattr(cursor, "lastrowid", None)
+
+    def fetchone(self):
+        return self.cursor.fetchone()
+
+    def fetchall(self):
+        return self.cursor.fetchall()
+
+    def __getitem__(self, item):
+        return self.cursor[item]
+
+
+class UnifiedDB:
+    def __init__(self, db_url=None, sqlite_path=None):
+        self.db_url = db_url
+        self.sqlite_path = sqlite_path
+        self.is_postgres = bool(db_url)
+        if self.is_postgres:
+            import psycopg2
+            from psycopg2.extras import RealDictCursor
+            url = db_url
+            if url.startswith("postgres://"):
+                url = url.replace("postgres://", "postgresql://", 1)
+            self.conn = psycopg2.connect(url, cursor_factory=RealDictCursor)
+        else:
+            self.conn = sqlite3.connect(sqlite_path)
+            self.conn.row_factory = sqlite3.Row
+            self.conn.execute("PRAGMA foreign_keys = ON")
+
+    def execute(self, query, params=()):
+        cursor = self.conn.cursor()
+        sql = query
+        if self.is_postgres:
+            sql = sql.replace("?", "%s")
+            is_insert = sql.strip().upper().startswith("INSERT")
+            has_returning = "RETURNING" in sql.upper()
+            if is_insert and not has_returning:
+                sql += " RETURNING id"
+                cursor.execute(sql, params)
+                inserted_id = cursor.fetchone()
+                wrapped = UnifiedCursor(cursor, is_postgres=True)
+                wrapped.lastrowid = inserted_id["id"] if inserted_id else None
+                return wrapped
+
+        cursor.execute(sql, params)
+        return UnifiedCursor(cursor, is_postgres=self.is_postgres)
+
+    def commit(self):
+        self.conn.commit()
+
+    def rollback(self):
+        self.conn.rollback()
+
+    def close(self):
+        self.conn.close()
+
+
+_DB_INITIALIZED = False
+
 def get_db():
-    """Open a connection to the SQLite database for this request."""
+    """Open a connection to PostgreSQL (Supabase) or SQLite for this request."""
     global _DB_INITIALIZED
     if "db" not in g:
-        g.db = sqlite3.connect(app.config["DATABASE"])
-        g.db.row_factory = sqlite3.Row  # access columns by name
-        g.db.execute("PRAGMA foreign_keys = ON")
+        g.db = UnifiedDB(db_url=os.environ.get("DATABASE_URL"), sqlite_path=app.config["DATABASE"])
     if not _DB_INITIALIZED:
         init_db_tables(g.db)
         _DB_INITIALIZED = True
@@ -84,63 +144,119 @@ def close_db(exc):
 
 def init_db_tables(db):
     """Create tables and seed admin user & parking slots."""
-    # --- users table -------------------------------------------------------
-
-    # --- users table -------------------------------------------------------
-    db.execute(
-        """
-        CREATE TABLE IF NOT EXISTS users (
-            id          INTEGER PRIMARY KEY AUTOINCREMENT,
-            name        TEXT NOT NULL,
-            college_id  TEXT NOT NULL UNIQUE,
-            email       TEXT NOT NULL,
-            created_at  TEXT NOT NULL
+    if db.is_postgres:
+        db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                id          SERIAL PRIMARY KEY,
+                name        VARCHAR(255) NOT NULL,
+                college_id  VARCHAR(100) NOT NULL UNIQUE,
+                email       VARCHAR(255) NOT NULL,
+                created_at  VARCHAR(100) NOT NULL
+            );
+            """
         )
-        """
-    )
-
-    # --- vehicles table ----------------------------------------------------
-    db.execute(
-        """
-        CREATE TABLE IF NOT EXISTS vehicles (
-            id              INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id         INTEGER NOT NULL,
-            vehicle_number  TEXT NOT NULL UNIQUE,
-            vehicle_type    TEXT NOT NULL,
-            qr_token        TEXT NOT NULL UNIQUE,
-            created_at      TEXT NOT NULL,
-            FOREIGN KEY (user_id) REFERENCES users (id)
+        db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS vehicles (
+                id              SERIAL PRIMARY KEY,
+                user_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                vehicle_number  VARCHAR(100) NOT NULL UNIQUE,
+                vehicle_type    VARCHAR(50) NOT NULL,
+                qr_token        VARCHAR(255) NOT NULL UNIQUE,
+                created_at      VARCHAR(100) NOT NULL
+            );
+            """
         )
-        """
-    )
-
-    # --- parking_slots table ------------------------------------------------
-    db.execute(
-        """
-        CREATE TABLE IF NOT EXISTS parking_slots (
-            id           INTEGER PRIMARY KEY AUTOINCREMENT,
-            slot_number  TEXT NOT NULL UNIQUE,
-            status       TEXT NOT NULL DEFAULT 'FREE',   -- FREE or OCCUPIED
-            vehicle_id   INTEGER
+        db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS parking_slots (
+                id           SERIAL PRIMARY KEY,
+                slot_number  VARCHAR(50) NOT NULL UNIQUE,
+                status       VARCHAR(50) NOT NULL DEFAULT 'FREE',
+                vehicle_id   INTEGER REFERENCES vehicles(id) ON DELETE SET NULL
+            );
+            """
         )
-        """
-    )
-
-    # --- parking_records table ----------------------------------------------
-    db.execute(
-        """
-        CREATE TABLE IF NOT EXISTS parking_records (
-            id          INTEGER PRIMARY KEY AUTOINCREMENT,
-            vehicle_id  INTEGER NOT NULL,
-            slot_id     INTEGER NOT NULL,
-            entry_time  TEXT NOT NULL,
-            exit_time   TEXT,
-            status      TEXT NOT NULL,                   -- PARKED or EXITED
-            FOREIGN KEY (vehicle_id) REFERENCES vehicles (id),
-            FOREIGN KEY (slot_id) REFERENCES parking_slots (id)
+        db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS parking_records (
+                id          SERIAL PRIMARY KEY,
+                vehicle_id  INTEGER NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
+                slot_id     INTEGER NOT NULL REFERENCES parking_slots(id) ON DELETE CASCADE,
+                entry_time  VARCHAR(100) NOT NULL,
+                exit_time   VARCHAR(100),
+                status      VARCHAR(50) NOT NULL DEFAULT 'PARKED'
+            );
+            """
         )
-        """
-    )
+        db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS admin_users (
+                id             SERIAL PRIMARY KEY,
+                username       VARCHAR(100) NOT NULL UNIQUE,
+                password_hash  VARCHAR(255) NOT NULL
+            );
+            """
+        )
+    else:
+        db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                name        TEXT NOT NULL,
+                college_id  TEXT NOT NULL UNIQUE,
+                email       TEXT NOT NULL,
+                created_at  TEXT NOT NULL
+            )
+            """
+        )
+        db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS vehicles (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id         INTEGER NOT NULL,
+                vehicle_number  TEXT NOT NULL UNIQUE,
+                vehicle_type    TEXT NOT NULL,
+                qr_token        TEXT NOT NULL UNIQUE,
+                created_at      TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+            """
+        )
+        db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS parking_slots (
+                id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                slot_number  TEXT NOT NULL UNIQUE,
+                status       TEXT NOT NULL DEFAULT 'FREE',
+                vehicle_id   INTEGER
+            )
+            """
+        )
+        db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS parking_records (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                vehicle_id  INTEGER NOT NULL,
+                slot_id     INTEGER NOT NULL,
+                entry_time  TEXT NOT NULL,
+                exit_time   TEXT,
+                status      TEXT NOT NULL,
+                FOREIGN KEY (vehicle_id) REFERENCES vehicles (id),
+                FOREIGN KEY (slot_id) REFERENCES parking_slots (id)
+            )
+            """
+        )
+        db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS admin_users (
+                id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                username       TEXT NOT NULL UNIQUE,
+                password_hash  TEXT NOT NULL
+            )
+            """
+        )
 
     # --- Seed 20 slots once -------------------------------------------------
     count = db.execute("SELECT COUNT(*) FROM parking_slots").fetchone()[0]
@@ -152,16 +268,6 @@ def init_db_tables(db):
                 (slot, "FREE"),
             )
 
-    # --- admin_users table --------------------------------------------------
-    db.execute(
-        """
-        CREATE TABLE IF NOT EXISTS admin_users (
-            id             INTEGER PRIMARY KEY AUTOINCREMENT,
-            username       TEXT NOT NULL UNIQUE,
-            password_hash  TEXT NOT NULL
-        )
-        """
-    )
     admin = db.execute(
         "SELECT id FROM admin_users WHERE username = 'admin'"
     ).fetchone()
