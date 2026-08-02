@@ -18,6 +18,11 @@ import sqlite3
 import uuid
 from datetime import datetime
 
+from dotenv import load_dotenv
+
+# Load environment variables from local .env file
+load_dotenv()
+
 from flask import (
     Flask,
     abort,
@@ -60,6 +65,30 @@ _DB_INITIALIZED = False
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
+class DictRowWrapper:
+    def __init__(self, row):
+        self._row = row
+        self._keys = list(row.keys()) if row is not None else []
+
+    def __getitem__(self, item):
+        if self._row is None:
+            raise KeyError(item)
+        if isinstance(item, int):
+            return self._row[self._keys[item]]
+        return self._row[item]
+
+    def keys(self):
+        return self._row.keys() if self._row else []
+
+    def get(self, key, default=None):
+        if self._row is None:
+            return default
+        return self._row.get(key, default)
+
+    def __bool__(self):
+        return bool(self._row)
+
+
 class UnifiedCursor:
     def __init__(self, cursor, is_postgres=False):
         self.cursor = cursor
@@ -67,13 +96,18 @@ class UnifiedCursor:
         self.lastrowid = getattr(cursor, "lastrowid", None)
 
     def fetchone(self):
-        return self.cursor.fetchone()
+        res = self.cursor.fetchone()
+        if res is None:
+            return None
+        if self.is_postgres and isinstance(res, dict):
+            return DictRowWrapper(res)
+        return res
 
     def fetchall(self):
-        return self.cursor.fetchall()
-
-    def __getitem__(self, item):
-        return self.cursor[item]
+        res = self.cursor.fetchall()
+        if self.is_postgres and res:
+            return [DictRowWrapper(r) if isinstance(r, dict) else r for r in res]
+        return res
 
 
 class UnifiedDB:
