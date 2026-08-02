@@ -249,8 +249,11 @@ def get_local_ip():
 def generate_qr(vehicle_id, qr_token):
     """
     Create a QR image file for a vehicle.
-    Uses BASE_URL / PUBLIC_URL / VERCEL_URL if provided, or automatically
-    resolves the local network LAN IP so mobile phones can connect over Wi-Fi.
+    Priority order:
+      1. BASE_URL or PUBLIC_URL or VERCEL_URL if set
+      2. request.host_url if in request context and not loopback (127.0.0.1/localhost)
+      3. detected LAN IP (via get_local_ip())
+      4. 127.0.0.1 fallback
     """
     custom_base = (
         os.environ.get("BASE_URL")
@@ -258,19 +261,27 @@ def generate_qr(vehicle_id, qr_token):
         or os.environ.get("VERCEL_URL")
     )
     if custom_base:
-        if not custom_base.startswith("http"):
-            custom_base = "https://" + custom_base
-        verify_url = f"{custom_base.rstrip('/')}/verify/{qr_token}"
-    elif has_request_context():
-        host_url = request.host_url.rstrip("/")
-        # Replace loopback address with local LAN IP for phone scanner compatibility
-        if "127.0.0.1" in host_url or "localhost" in host_url:
-            local_ip = get_local_ip()
-            host_url = host_url.replace("127.0.0.1", local_ip).replace("localhost", local_ip)
-        verify_url = f"{host_url}/verify/{qr_token}"
+        if not custom_base.startswith("http://") and not custom_base.startswith("https://"):
+            custom_base = "http://" + custom_base
+        base = custom_base.rstrip("/")
     else:
-        local_ip = get_local_ip()
-        verify_url = f"http://{local_ip}:5000/verify/{qr_token}"
+        lan_ip = get_local_ip()
+        if has_request_context():
+            host_url = request.host_url.rstrip("/")
+            if "127.0.0.1" in host_url or "localhost" in host_url:
+                if lan_ip and lan_ip != "127.0.0.1":
+                    base = host_url.replace("127.0.0.1", lan_ip).replace("localhost", lan_ip)
+                else:
+                    base = host_url
+            else:
+                base = host_url
+        else:
+            if lan_ip and lan_ip != "127.0.0.1":
+                base = f"http://{lan_ip}:5000"
+            else:
+                base = "http://127.0.0.1:5000"
+
+    verify_url = f"{base}/verify/{qr_token}"
 
     filename = f"vehicle_{vehicle_id}.png"
     os.makedirs(app.config["QR_FOLDER"], exist_ok=True)
