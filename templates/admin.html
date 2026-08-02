@@ -71,27 +71,36 @@ Entrance
 
 <!-- Dynamic Grid Render -->
 <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3 mb-gutter">
-{% for slot in slots %}
-  <button class="slot-transition relative aspect-[3/4] border-2 rounded-lg flex flex-col items-center justify-center group p-2
-    {% if slot.status == 'FREE' %}
-      bg-surface-container-lowest border-outline-variant hover:bg-white hover:border-primary
-    {% else %}
-      bg-error-container border-error hover:shadow-lg
-    {% endif %}"
-    onclick="selectSlot('{{ slot.slot_number }}', '{{ slot.status }}', '{{ slot.vehicle_number or "" }}', '{{ slot.vehicle_type or "" }}', '{{ slot.entry_time or "" }}')">
-    <span class="text-label-sm font-label-sm mb-1 {% if slot.status == 'FREE' %}text-secondary{% else %}text-on-error-container font-bold{% endif %}">
-      {{ slot.slot_number }}
-    </span>
-    {% if slot.status == 'FREE' %}
-      <span class="material-symbols-outlined text-outline-variant group-hover:text-primary" data-icon="add_circle">add_circle</span>
-    {% else %}
-      <span class="material-symbols-outlined text-error" data-icon="{% if slot.vehicle_type == 'Bike' %}pedal_bike{% else %}directions_car{% endif %}" style="font-variation-settings: 'FILL' 1;">
-        {% if slot.vehicle_type == 'Bike' %}pedal_bike{% else %}directions_car{% endif %}
+{% if slots %}
+  {% for slot in slots %}
+    <button class="slot-transition relative aspect-[3/4] border-2 rounded-lg flex flex-col items-center justify-center group p-2
+      {% if slot.status == 'FREE' %}
+        bg-surface-container-lowest border-outline-variant hover:bg-white hover:border-primary
+      {% else %}
+        bg-error-container border-error hover:shadow-lg
+      {% endif %}"
+      data-slot="{{ slot.slot_number }}"
+      data-status="{{ slot.status }}"
+      data-vehicle="{{ slot.vehicle_number or '' }}"
+      data-type="{{ slot.vehicle_type or '' }}"
+      data-entry="{{ slot.entry_time or '' }}"
+      onclick="selectSlotFromEl(this)">
+      <span class="text-label-sm font-label-sm mb-1 {% if slot.status == 'FREE' %}text-secondary{% else %}text-on-error-container font-bold{% endif %}">
+        {{ slot.slot_number }}
       </span>
-      <div class="absolute -top-1 -right-1 w-3 h-3 bg-error rounded-full animate-pulse"></div>
-    {% endif %}
-  </button>
-{% endfor %}
+      {% if slot.status == 'FREE' %}
+        <span class="material-symbols-outlined text-outline-variant group-hover:text-primary" data-icon="add_circle">add_circle</span>
+      {% else %}
+        <span class="material-symbols-outlined text-error" data-icon="{% if slot.vehicle_type == 'Bike' %}pedal_bike{% else %}directions_car{% endif %}" style="font-variation-settings: 'FILL' 1;">
+          {% if slot.vehicle_type == 'Bike' %}pedal_bike{% else %}directions_car{% endif %}
+        </span>
+        <div class="absolute -top-1 -right-1 w-3 h-3 bg-error rounded-full animate-pulse"></div>
+      {% endif %}
+    </button>
+  {% endfor %}
+{% else %}
+  <p class="text-secondary text-body-md col-span-full text-center py-4">No slots configured.</p>
+{% endif %}
 </div>
 
 <!-- Driveway -->
@@ -186,7 +195,11 @@ Entrance
 <td class="py-sm px-base text-secondary">{{ item.owner }}</td>
 <td class="py-sm px-base text-secondary">{{ item.entry_time }}</td>
 <td class="py-sm px-base text-right">
+{% if item.qr_token %}
 <a href="{{ url_for('verify_token', token=item.qr_token) }}" class="bg-primary text-on-primary px-sm py-1 rounded text-label-sm font-label-sm hover:opacity-90">Verify Pass</a>
+{% else %}
+<span class="text-secondary text-label-sm">—</span>
+{% endif %}
 </td>
 </tr>
 {% endfor %}
@@ -201,7 +214,13 @@ Entrance
 
 {% block scripts %}
 <script>
-function selectSlot(slotId, status, vehicleNum, vehicleType, entryTime) {
+function selectSlotFromEl(el) {
+    const slotId = el.getAttribute('data-slot');
+    const status = el.getAttribute('data-status');
+    const vehicleNum = el.getAttribute('data-vehicle');
+    const vehicleType = el.getAttribute('data-type');
+    const entryTime = el.getAttribute('data-entry');
+    
     const empty = document.getElementById('emptyState');
     const occupied = document.getElementById('occupiedDetail');
     const available = document.getElementById('availableDetail');

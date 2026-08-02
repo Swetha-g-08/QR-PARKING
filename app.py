@@ -488,6 +488,17 @@ def admin_dashboard():
         "SELECT COUNT(*) FROM parking_records WHERE status = 'PARKED'"
     ).fetchone()[0]
 
+    slots = db.execute(
+        """
+        SELECT ps.*, v.vehicle_number, v.vehicle_type, pr.entry_time
+        FROM parking_slots ps
+        LEFT JOIN vehicles v ON v.id = ps.vehicle_id
+        LEFT JOIN parking_records pr
+               ON pr.vehicle_id = ps.vehicle_id AND pr.status = 'PARKED'
+        ORDER BY substr(ps.slot_number, 1, 1), CAST(substr(ps.slot_number, 2) AS INTEGER)
+        """
+    ).fetchall()
+
     current = db.execute(
         """
         SELECT pr.entry_time, ps.slot_number,
@@ -507,6 +518,7 @@ def admin_dashboard():
         registered=registered,
         currently_parked=currently_parked,
         current=current,
+        slots=slots,
     )
 
 
