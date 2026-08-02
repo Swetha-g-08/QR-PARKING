@@ -35,9 +35,15 @@ import qrcode
 # ---------------------------------------------------------------------------
 # App configuration
 # ---------------------------------------------------------------------------
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATABASE = os.path.join(BASE_DIR, "parking.db")
-QR_FOLDER = os.path.join(BASE_DIR, "static", "qr")
+IS_VERCEL = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
+if IS_VERCEL:
+    DATA_DIR = "/tmp"
+    QR_FOLDER = os.path.join("/tmp", "qr")
+else:
+    DATA_DIR = os.path.dirname(os.path.abspath(__file__))
+    QR_FOLDER = os.path.join(DATA_DIR, "static", "qr")
+
+DATABASE = os.path.join(DATA_DIR, "parking.db")
 
 app = Flask(__name__)
 # A random secret key keeps Flask sessions safe. In production use a real secret.
@@ -48,16 +54,21 @@ app.config["QR_FOLDER"] = QR_FOLDER
 # Make sure the QR image folder exists.
 os.makedirs(QR_FOLDER, exist_ok=True)
 
+_DB_INITIALIZED = False
 
 # ---------------------------------------------------------------------------
 # Database helpers
 # ---------------------------------------------------------------------------
 def get_db():
     """Open a connection to the SQLite database for this request."""
+    global _DB_INITIALIZED
     if "db" not in g:
         g.db = sqlite3.connect(app.config["DATABASE"])
         g.db.row_factory = sqlite3.Row  # access columns by name
         g.db.execute("PRAGMA foreign_keys = ON")
+    if not _DB_INITIALIZED:
+        init_db_tables(g.db)
+        _DB_INITIALIZED = True
     return g.db
 
 
@@ -69,12 +80,9 @@ def close_db(exc):
         db.close()
 
 
-def init_db():
-    """
-    Create all tables and seed 20 parking slots (A01-A10, B01-B10).
-    Safe to call on every startup - existing data is preserved.
-    """
-    db = get_db()
+def init_db_tables(db):
+    """Create tables and seed admin user & parking slots."""
+    # --- users table -------------------------------------------------------
 
     # --- users table -------------------------------------------------------
     db.execute(
@@ -141,6 +149,25 @@ def init_db():
                 "INSERT INTO parking_slots (slot_number, status) VALUES (?, ?)",
                 (slot, "FREE"),
             )
+
+    # --- admin_users table --------------------------------------------------
+    db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS admin_users (
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            username       TEXT NOT NULL UNIQUE,
+            password_hash  TEXT NOT NULL
+        )
+        """
+    )
+    admin = db.execute(
+        "SELECT id FROM admin_users WHERE username = 'admin'"
+    ).fetchone()
+    if admin is None:
+        db.execute(
+            "INSERT INTO admin_users (username, password_hash) VALUES (?, ?)",
+            ("admin", generate_password_hash("admin123")),
+        )
 
     db.commit()
 
@@ -681,29 +708,5 @@ def server_error(e):
 # Entry point
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    with app.app_context():
-        init_db()
-
-        # Create the admin user only if it does not exist.
-        db = get_db()
-        db.execute(
-            """
-            CREATE TABLE IF NOT EXISTS admin_users (
-                id             INTEGER PRIMARY KEY AUTOINCREMENT,
-                username       TEXT NOT NULL UNIQUE,
-                password_hash  TEXT NOT NULL
-            )
-            """
-        )
-        admin = db.execute(
-            "SELECT id FROM admin_users WHERE username = 'admin'"
-        ).fetchone()
-        if admin is None:
-            db.execute(
-                "INSERT INTO admin_users (username, password_hash) VALUES (?, ?)",
-                ("admin", generate_password_hash("admin123")),
-            )
-            db.commit()
-
     app.run(debug=True)
 
