@@ -231,11 +231,16 @@ def release_slot(slot_id):
 
 def generate_qr(vehicle_id, qr_token):
     """
-    Create a QR image file for a vehicle. The QR contains the public
-    verify URL.
+    Create a QR image file for a vehicle.
+    Uses PUBLIC_URL if set (e.g. Vercel URL or local IP), otherwise uses request host.
     """
-    if has_request_context():
-        verify_url = request.host_url.rstrip('/') + url_for("verify_token", token=qr_token)
+    public_url = os.environ.get("PUBLIC_URL") or os.environ.get("VERCEL_URL")
+    if public_url:
+        if not public_url.startswith("http"):
+            public_url = "https://" + public_url
+        verify_url = f"{public_url.rstrip('/')}/verify/{qr_token}"
+    elif has_request_context():
+        verify_url = f"{request.host_url.rstrip('/')}/verify/{qr_token}"
     else:
         verify_url = f"/verify/{qr_token}"
 
