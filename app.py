@@ -323,12 +323,12 @@ def find_free_slot():
     Slots are ordered by their natural A01, A02 ... B10 order.
     """
     db = get_db()
-    # Order by a computed key so A01..A10 come before B01..B10.
     row = db.execute(
         """
-        SELECT * FROM parking_slots
-        WHERE status = 'FREE'
-        ORDER BY substr(slot_number, 1, 1), CAST(substr(slot_number, 2) AS INTEGER)
+        SELECT id, slot_number
+        FROM parking_slots
+        WHERE status = 'FREE' AND vehicle_id IS NULL
+        ORDER BY SUBSTR(slot_number, 1, 1), CAST(SUBSTR(slot_number, 2) AS INTEGER)
         LIMIT 1
         """
     ).fetchone()
@@ -338,7 +338,7 @@ def find_free_slot():
 def assign_slot(vehicle_id, slot_id):
     """
     Mark a slot as OCCUPIED, attach the vehicle, and create a PARKED record.
-    Returns the created parking record.
+    Returns the active parking record with slot details.
     """
     db = get_db()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -347,7 +347,7 @@ def assign_slot(vehicle_id, slot_id):
         "UPDATE parking_slots SET status = 'OCCUPIED', vehicle_id = ? WHERE id = ?",
         (vehicle_id, slot_id),
     )
-    cur = db.execute(
+    db.execute(
         """
         INSERT INTO parking_records (vehicle_id, slot_id, entry_time, status)
         VALUES (?, ?, ?, 'PARKED')
@@ -355,9 +355,7 @@ def assign_slot(vehicle_id, slot_id):
         (vehicle_id, slot_id, now),
     )
     db.commit()
-    return db.execute(
-        "SELECT * FROM parking_records WHERE id = ?", (cur.lastrowid,)
-    ).fetchone()
+    return get_current_parked_vehicle(vehicle_id)
 
 
 def release_slot(slot_id):
@@ -527,33 +525,34 @@ def register():
             flash(f"Vehicle number '{vehicle_number}' is already registered.", "danger")
             return redirect(url_for("register"))
 
+        # Insert user and vehicle in a single transaction -------------
+        created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        qr_token = str(uuid.uuid4())
+
         try:
-            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             cur = db.execute(
-                """
-                INSERT INTO users (name, college_id, email, created_at)
-                VALUES (?, ?, ?, ?)
-                """,
-                (name, college_id, email, now),
+                "INSERT INTO users (name, college_id, email, created_at) VALUES (?, ?, ?, ?)",
+                (name, college_id, email, created_at),
             )
             user_id = cur.lastrowid
 
-            qr_token = str(uuid.uuid4())  # unique, safe token
-            cur = db.execute(
+            v_cur = db.execute(
                 """
                 INSERT INTO vehicles (user_id, vehicle_number, vehicle_type, qr_token, created_at)
                 VALUES (?, ?, ?, ?, ?)
                 """,
-                (user_id, vehicle_number, vehicle_type, qr_token, now),
+                (user_id, vehicle_number, vehicle_type, qr_token, created_at),
             )
-            vehicle_id = cur.lastrowid
-
-            generate_qr(vehicle_id, qr_token)
+            vehicle_id = v_cur.lastrowid
             db.commit()
 
-            flash("Registration successful! Your QR code is ready.", "success")
+            # Generate the QR image immediately after registration
+            generate_qr(vehicle_id, qr_token)
+
+            flash("Vehicle registered successfully! QR Code generated.", "success")
             return redirect(url_for("show_qr", vehicle_id=vehicle_id))
-        except sqlite3.IntegrityError:
+
+        except Exception as e:
             db.rollback()
             flash("Database error: duplicate college ID or vehicle number.", "danger")
             return redirect(url_for("register"))
@@ -593,9 +592,15 @@ def show_qr(vehicle_id):
 @app.route("/verify/<token>")
 def verify_token(token):
     """
-    Public verify page. Anyone can open it from the QR.
-    Shows VALID QR, vehicle info and current parking status.
-    Security then clicks ALLOW ENTRY / EXIT here (or uses /scan).
+    Public verify page triggered by QR scan.
+    1. Finds vehicle by qr_token.
+    2. Checks if vehicle is ALREADY PARKED.
+       - If ALREADY PARKED: displays existing assigned slot.
+       - If NOT PARKED (and not exiting):
+         a. Finds first available slot (status = 'FREE' AND vehicle_id IS NULL).
+         b. If no free slot available: flash "Parking Full".
+         c. If free slot available: automatically allocates slot (status='OCCUPIED'), creates parking_record ('PARKED'), and commits.
+    3. Renders vehicle.html showing assigned slot and updated status.
     """
     db = get_db()
     vehicle = db.execute(
@@ -608,18 +613,26 @@ def verify_token(token):
     ).fetchone()
 
     if vehicle is None:
-        # Invalid / unknown QR token
         return render_template("vehicle.html", valid=False)
 
+    # Check if vehicle is already parked
     parked = get_current_parked_vehicle(vehicle["id"])
-    free_slot = find_free_slot()
+
+    # Automatically allocate slot if vehicle is not parked and not exiting
+    if not parked and not request.args.get("exited"):
+        free_slot = find_free_slot()
+        if free_slot:
+            parked = assign_slot(vehicle["id"], free_slot["id"])
+            flash(f"Vehicle Verified! Assigned Slot {free_slot['slot_number']}.", "success")
+        else:
+            flash("Parking Full: No parking slots are currently available.", "danger")
 
     return render_template(
         "vehicle.html",
         valid=True,
         vehicle=vehicle,
         parked=parked,
-        free_slot=free_slot,
+        free_slot=None if parked else find_free_slot(),
     )
 
 
@@ -796,7 +809,7 @@ def exit_vehicle(vehicle_id):
     db.commit()
 
     flash(f"{vehicle['vehicle_number']} has exited. Slot {parked['slot_number']} is now FREE.", "success")
-    return redirect(url_for("verify_token", token=vehicle["qr_token"]))
+    return redirect(url_for("verify_token", token=vehicle["qr_token"], exited=1))
 
 
 @app.route("/history")
