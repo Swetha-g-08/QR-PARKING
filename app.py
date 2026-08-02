@@ -849,6 +849,32 @@ def history():
     return render_template("history.html", rows=rows, q=q)
 
 
+@app.route("/admin/reset-parking", methods=["POST"])
+@login_required
+def reset_parking():
+    """
+    Admin-only endpoint to reset operational parking data.
+    Deletes all parking records and marks all parking slots as FREE.
+    Preserves users, vehicles, admin_users, and QR tokens.
+    """
+    db = get_db()
+    try:
+        # Transactional deletion of records and slot status reset
+        db.execute("DELETE FROM parking_records")
+        db.execute("UPDATE parking_slots SET status = 'FREE', vehicle_id = NULL")
+        db.commit()
+
+        flash(
+            "✓ Parking data reset successfully. All parking slots are now FREE. Parking history has been cleared. Registered vehicles and users were preserved.",
+            "success",
+        )
+    except Exception as e:
+        db.rollback()
+        flash(f"Error resetting parking data: {str(e)}", "danger")
+
+    return redirect(url_for("admin_dashboard"))
+
+
 # ---------------------------------------------------------------------------
 # JSON APIs (used by the dashboard for lightweight AJAX polling)
 # ---------------------------------------------------------------------------

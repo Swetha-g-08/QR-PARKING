@@ -210,6 +210,62 @@ Entrance
 <p class="text-body-md text-secondary text-center py-lg">No vehicles currently parked.</p>
 {% endif %}
 </section>
+
+<!-- Danger Zone / System Management Section -->
+<section class="mt-xl bg-surface-container-lowest border border-error/30 rounded-xl p-lg mb-xl">
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-md">
+    <div>
+      <h3 class="text-headline-md font-headline-md text-error flex items-center gap-xs">
+        <span class="material-symbols-outlined text-error">warning</span>
+        System Management & Danger Zone
+      </h3>
+      <p class="text-body-md text-secondary mt-1">Reset parking session data (slots and active logs) while preserving registered vehicles & users.</p>
+    </div>
+    <div>
+      <button type="button" onclick="openResetModal()" class="bg-error text-on-error px-md py-base rounded-lg font-bold text-label-md hover:bg-error/90 transition-all flex items-center gap-2 shadow-sm">
+        <span class="material-symbols-outlined text-lg">restart_alt</span>
+        Reset Parking Data
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- Reset Confirmation Modal -->
+<div id="resetModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-gutter">
+  <div class="bg-surface border border-outline-variant rounded-2xl max-w-md w-full p-lg shadow-xl space-y-md">
+    <div class="flex items-center gap-sm text-error">
+      <div class="w-10 h-10 rounded-full bg-error/10 flex items-center justify-center flex-shrink-0">
+        <span class="material-symbols-outlined text-error text-2xl">warning</span>
+      </div>
+      <h3 class="text-headline-md font-bold text-primary">Reset Parking Data?</h3>
+    </div>
+
+    <div class="text-body-md text-secondary space-y-xs border-y border-outline-variant/60 py-md">
+      <p class="font-semibold text-primary mb-2">This action will:</p>
+      <ul class="space-y-1 text-sm list-disc list-inside">
+        <li>Delete all parking history records</li>
+        <li>Mark all parking slots as <strong class="text-emerald-700">FREE</strong></li>
+        <li>Remove current vehicle-slot assignments</li>
+      </ul>
+      <p class="text-xs text-secondary mt-3 italic bg-surface-container p-sm rounded border border-outline-variant/40">
+        Note: Registered users and vehicles will NOT be deleted.
+      </p>
+      <p class="font-bold text-error text-sm mt-3">Are you sure you want to proceed?</p>
+    </div>
+
+    <div class="flex items-center justify-end gap-sm pt-xs">
+      <button type="button" onclick="closeResetModal()" class="px-md py-base border border-outline-variant rounded-lg font-bold text-secondary hover:bg-surface-container transition-colors">
+        Cancel
+      </button>
+      <form action="{{ url_for('reset_parking') }}" method="POST" class="inline">
+        <button type="submit" class="bg-error text-on-error px-md py-base rounded-lg font-bold hover:bg-error/90 transition-all flex items-center gap-1 shadow-sm">
+          <span class="material-symbols-outlined text-lg">restart_alt</span>
+          Reset Data
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -246,6 +302,14 @@ function resetPanel() {
     document.getElementById('emptyState').classList.remove('hidden');
     document.getElementById('occupiedDetail').classList.add('hidden');
     document.getElementById('availableDetail').classList.add('hidden');
+}
+
+function openResetModal() {
+    document.getElementById('resetModal').classList.remove('hidden');
+}
+
+function closeResetModal() {
+    document.getElementById('resetModal').classList.add('hidden');
 }
 </script>
 {% endblock %}
