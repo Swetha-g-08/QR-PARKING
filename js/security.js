@@ -20,26 +20,22 @@ async function verifyToken(token) {
     const msg = document.getElementById('security-message');
     msg.className = 'error-msg';
     
-    // First try by session qr_token
-    let { data: session, error } = await supabase.from('parking_sessions').select('*, profiles(name), parking_slots(slot_number)').eq('qr_token', token).single();
-
-    // If not found, try treating token as user_id (permanent vehicle QR)
-    if (!session) {
-        const { data: userSessions } = await supabase.from('parking_sessions')
-            .select('*, profiles(name), parking_slots(slot_number)')
-            .eq('user_id', token)
-            .in('status', ['pending', 'active'])
-            .order('created_at', { ascending: false })
-            .limit(1);
-            
-        if (userSessions && userSessions.length > 0) {
-            session = userSessions[0];
-            error = null;
-        }
-    }
+    const { data: session, error } = await supabase.from('parking_sessions').select('*, profiles(name), parking_slots(slot_number)').eq('qr_token', token).single();
 
     if (error || !session) {
-        msg.textContent = 'Invalid QR code or no active session found for this vehicle.';
+        msg.textContent = 'Invalid QR code';
+        msg.classList.add('visible');
+        return;
+    }
+
+    if (session.status === 'completed') {
+        msg.textContent = 'QR code has already been used';
+        msg.classList.add('visible');
+        return;
+    }
+
+    if (session.status === 'cancelled') {
+        msg.textContent = 'Parking pass has been cancelled';
         msg.classList.add('visible');
         return;
     }
@@ -52,22 +48,26 @@ async function verifyToken(token) {
 function displaySession(session) {
     document.getElementById('sessionInfo').classList.remove('hidden');
     
-    document.getElementById('sessionDetails').innerHTML = `
-        <p style="margin-bottom:8px;">Student: <strong>${session.profiles.name}</strong></p>
-        <p style="margin-bottom:8px;">Vehicle: <strong>${session.vehicle_number}</strong></p>
-        <p style="margin-bottom:8px;">Slot: <strong>${session.parking_slots.slot_number}</strong></p>
-        <p style="margin-bottom:8px;">Status: <span class="badge badge-${session.status}">${session.status}</span></p>
-        ${session.entry_time ? `<p style="margin-bottom:8px;">Entry: ${new Date(session.entry_time).toLocaleTimeString()}</p>` : ''}
-        ${session.exit_time ? `<p style="margin-bottom:8px;">Exit: ${new Date(session.exit_time).toLocaleTimeString()}</p>` : ''}
-    `;
-
+    const detailsDiv = document.getElementById('sessionDetails');
     const actions = document.getElementById('actionButtons');
+
     if (session.status === 'pending') {
+        detailsDiv.innerHTML = `
+            <p style="margin-bottom:8px;">Student name: <strong>${session.profiles.name}</strong></p>
+            <p style="margin-bottom:8px;">Vehicle number: <strong>${session.vehicle_number}</strong></p>
+            <p style="margin-bottom:8px;">Parking slot: <strong>${session.parking_slots.slot_number}</strong></p>
+            <p style="margin-bottom:8px;">Status: <strong>Pending</strong></p>
+        `;
         actions.innerHTML = `<button class="btn" style="background:#087443; width:100%; margin-top:10px;" onclick="approveEntry('${session.id}', '${session.slot_id}')">Approve Entry</button>`;
     } else if (session.status === 'active') {
+        detailsDiv.innerHTML = `
+            <p style="margin-bottom:8px;">Student name: <strong>${session.profiles.name}</strong></p>
+            <p style="margin-bottom:8px;">Vehicle number: <strong>${session.vehicle_number}</strong></p>
+            <p style="margin-bottom:8px;">Parking slot: <strong>${session.parking_slots.slot_number}</strong></p>
+            <p style="margin-bottom:8px;">Status: <strong>Active</strong></p>
+            <p style="margin-bottom:8px;">Entry time: <strong>${new Date(session.entry_time).toLocaleTimeString()}</strong></p>
+        `;
         actions.innerHTML = `<button class="btn btn-danger" style="width:100%; margin-top:10px;" onclick="markExit('${session.id}', '${session.slot_id}')">Mark Exit</button>`;
-    } else {
-        actions.innerHTML = `<p class="muted mt-1 text-center">Session is ${session.status}.</p>`;
     }
 }
 

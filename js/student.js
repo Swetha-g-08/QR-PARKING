@@ -7,13 +7,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (currentUserProfile) {
         document.getElementById('welcomeMessage').textContent = `Welcome, ${currentUserProfile.name}`;
         document.getElementById('vehicleDetails').innerHTML = `<p class="muted" style="margin:0;">Vehicle: <strong>${currentUserProfile.vehicle_number}</strong> (${currentUserProfile.vehicle_type.toUpperCase()})</p>`;
-        
-        // Generate permanent vehicle QR code
-        const vehicleQr = document.getElementById('vehicleQrCode');
-        if (vehicleQr) {
-            vehicleQr.innerHTML = '';
-            new QRCode(vehicleQr, { text: currentUserProfile.id, width: 100, height: 100, colorDark: "#12355b" });
-        }
+
         
         checkCurrentSession();
         loadHistory();
@@ -35,14 +29,24 @@ function displayCurrentSession(session) {
     document.getElementById('bookSlotSection').classList.add('hidden');
     document.getElementById('currentSessionSection').classList.remove('hidden');
     
-    document.getElementById('sessionDetails').innerHTML = `
-        <p style="margin-bottom:8px;">Slot: <strong>${session.parking_slots.slot_number}</strong></p>
-        <p>Status: <span class="badge badge-${session.status}">${session.status}</span></p>
-    `;
-
     const qrContainer = document.getElementById('qrCode');
     qrContainer.innerHTML = '';
-    new QRCode(qrContainer, { text: session.qr_token, width: 180, height: 180, colorDark: "#12355b" });
+    
+    // Ensure QR code encodes exactly the token and is large enough
+    new QRCode(qrContainer, { text: session.qr_token, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.H, colorDark: "#12355b" });
+    qrContainer.style.display = 'flex';
+    qrContainer.style.justifyContent = 'center';
+    qrContainer.style.padding = '15px';
+
+    document.getElementById('sessionDetails').innerHTML = `
+        <p style="font-size: 1.25rem; font-weight: bold; text-align: center; margin-bottom: 25px; letter-spacing: 1px; word-break: break-all;">${session.qr_token}</p>
+        <h3 style="margin-bottom:12px; font-size:1.05rem;">Your parking details</h3>
+        <p style="margin-bottom:8px;">Name: <strong>${currentUserProfile.name}</strong></p>
+        <p style="margin-bottom:8px;">Vehicle: <strong>${currentUserProfile.vehicle_number}</strong></p>
+        <p style="margin-bottom:8px;">Type: <strong>${currentUserProfile.vehicle_type.charAt(0).toUpperCase() + currentUserProfile.vehicle_type.slice(1)}</strong></p>
+        <p style="margin-bottom:8px;">Status: <strong>${session.status === 'pending' ? 'Ready to scan' : session.status}</strong></p>
+        <p style="margin-top:25px; text-align:center; color:var(--muted); font-size:0.9rem;">At the entrance, a warden scans this code to verify your parking.</p>
+    `;
     
     document.getElementById('downloadQrBtn').classList.remove('hidden');
     document.getElementById('downloadQrBtn').onclick = () => {
@@ -115,7 +119,15 @@ async function createParkingSession() {
     const msg = document.getElementById('booking-error');
     msg.className = 'error-msg';
     
-    const qrToken = 'PARK-' + crypto.randomUUID().split('-')[0].toUpperCase();
+    // Check for existing active/pending session
+    const { data: existing } = await supabase.from('parking_sessions').select('id').eq('user_id', currentUserProfile.id).in('status', ['pending', 'active']);
+    if (existing && existing.length > 0) {
+        msg.textContent = 'You already have an active parking pass.';
+        msg.classList.add('visible');
+        return;
+    }
+    
+    const qrToken = 'PARK-' + crypto.randomUUID().toUpperCase();
     const { error } = await supabase.from('parking_sessions').insert([{
         user_id: currentUserProfile.id,
         slot_id: selectedSlotId,
