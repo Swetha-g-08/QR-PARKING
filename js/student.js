@@ -58,23 +58,49 @@ async function loadParkingSlots() {
         return;
     }
 
+    // Group by first letter (e.g. 'A', 'B') to create rows
+    const grouped = {};
     slots.forEach(slot => {
-        const btn = document.createElement('button');
-        btn.className = `slot ${slot.status}`;
-        btn.innerHTML = `<strong>${slot.slot_number}</strong><small>${slot.status}</small>`;
-        
-        if (slot.status === 'available') {
-            btn.onclick = () => {
-                document.querySelectorAll('.slot').forEach(el => el.classList.remove('selected'));
-                btn.classList.add('selected');
-                selectedSlotId = slot.id;
-                document.getElementById('bookBtn').classList.remove('hidden');
-            };
-        } else {
-            btn.disabled = true;
-        }
-        container.appendChild(btn);
+        const match = slot.slot_number.match(/^[a-zA-Z]+/);
+        const prefix = match ? match[0].toUpperCase() : 'Other';
+        if (!grouped[prefix]) grouped[prefix] = [];
+        grouped[prefix].push(slot);
     });
+
+    for (const [rowName, rowSlots] of Object.entries(grouped)) {
+        // Add row header
+        const rowHeader = document.createElement('h3');
+        rowHeader.textContent = `Row ${rowName}`;
+        rowHeader.style.width = '100%';
+        rowHeader.style.margin = '15px 0 5px 0';
+        rowHeader.style.fontSize = '1.1rem';
+        container.appendChild(rowHeader);
+
+        // Add grid for this row
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'slots';
+        rowDiv.style.margin = '0';
+
+        rowSlots.forEach(slot => {
+            const btn = document.createElement('button');
+            btn.className = `slot ${slot.status}`;
+            btn.innerHTML = `<strong>${slot.slot_number}</strong><small>${slot.status}</small>`;
+            
+            if (slot.status === 'available') {
+                btn.onclick = () => {
+                    document.querySelectorAll('.slot').forEach(el => el.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    selectedSlotId = slot.id;
+                    document.getElementById('bookBtn').classList.remove('hidden');
+                };
+            } else {
+                btn.disabled = true;
+            }
+            rowDiv.appendChild(btn);
+        });
+        
+        container.appendChild(rowDiv);
+    }
 }
 
 async function createParkingSession() {

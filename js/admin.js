@@ -30,14 +30,37 @@ async function loadAdminSlots() {
         if (error) throw error;
         const container = document.getElementById('adminSlotsContainer');
         container.innerHTML = '';
+        
+        const grouped = {};
         slots.forEach(slot => {
-            container.innerHTML += `
-            <div class="slot ${slot.status}">
-                <strong>${slot.slot_number}</strong>
-                <small>${slot.vehicle_type}</small>
-                <button class="link-danger" onclick="deleteSlot('${slot.id}')">Delete</button>
-            </div>`;
+            const match = slot.slot_number.match(/^[a-zA-Z]+/);
+            const prefix = match ? match[0].toUpperCase() : 'Other';
+            if (!grouped[prefix]) grouped[prefix] = [];
+            grouped[prefix].push(slot);
         });
+
+        for (const [rowName, rowSlots] of Object.entries(grouped)) {
+            const rowHeader = document.createElement('h3');
+            rowHeader.textContent = `Row ${rowName}`;
+            rowHeader.style.width = '100%';
+            rowHeader.style.margin = '15px 0 5px 0';
+            rowHeader.style.fontSize = '1.1rem';
+            container.appendChild(rowHeader);
+
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'slots';
+            rowDiv.style.margin = '0';
+
+            rowSlots.forEach(slot => {
+                rowDiv.innerHTML += `
+                <div class="slot ${slot.status}">
+                    <strong>${slot.slot_number}</strong>
+                    <small>${slot.vehicle_type}</small>
+                    <button class="link-danger" onclick="deleteSlot('${slot.id}')">Delete</button>
+                </div>`;
+            });
+            container.appendChild(rowDiv);
+        }
     } catch (err) { console.error(err); }
 }
 
