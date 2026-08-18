@@ -1,11 +1,121 @@
-let profile,selectedSlotId,currentSession;
-document.addEventListener('DOMContentLoaded',async()=>{profile=await checkAuthAndRole('student');if(!profile)return;welcomeMessage.textContent=`Welcome, ${profile.name||'Student'}`;vehicleDetails.innerHTML=`<p><b>Vehicle Number:</b> ${profile.vehicle_number||'Not set'}</p><p><b>Vehicle Type:</b> ${(profile.vehicle_type||'').toUpperCase()}</p>`;await refreshStudent();});
-async function refreshStudent(){const {data}=await supabase.from('parking_sessions').select('*,parking_slots(slot_number)').eq('user_id',profile.id).in('status',['pending','active']).order('created_at',{ascending:false}).limit(1);currentSession=data?.[0];if(currentSession)showSession();else{currentSessionSection.classList.add('hidden');bookSlotSection.classList.remove('hidden');loadSlots();}loadHistory();}
-function showSession(){bookSlotSection.classList.add('hidden');currentSessionSection.classList.remove('hidden');sessionDetails.innerHTML=`<p><b>Slot:</b> ${currentSession.parking_slots.slot_number}</p><p><b>Status:</b> <span class="badge badge-${currentSession.status}">${currentSession.status}</span></p>`;qrCode.innerHTML='';new QRCode(qrCode,{text:currentSession.qr_token,width:220,height:220,correctLevel:QRCode.CorrectLevel.H});downloadQrBtn.classList.remove('hidden');}
-async function loadSlots(){const {data,error}=await supabase.from('parking_slots').select('*').eq('vehicle_type',profile.vehicle_type).order('slot_number');if(error)return;slotsContainer.innerHTML=data.map(s=>`<button class="slot ${s.status} ${selectedSlotId===s.id?'selected':''}" ${s.status!=='available'?'disabled':''} onclick="selectSlot('${s.id}')"><b>${s.slot_number}</b><small>${s.vehicle_type}</small><span>${s.status}</span></button>`).join('');}
-function selectSlot(id){selectedSlotId=id;bookBtn.classList.remove('hidden');loadSlots();}
-function makeToken(){return `PARK-${crypto.getRandomValues(new Uint32Array(1))[0].toString(16).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;}
-async function createParkingSession(){if(!selectedSlotId)return showMessage('booking-error','Please select a parking slot.');const {error}=await supabase.rpc('create_parking_session',{p_slot_id:selectedSlotId,p_token:makeToken()});if(error)return showMessage('booking-error',error.message.includes('active')?'You already have an active parking session.':'Parking slot is no longer available.');selectedSlotId=null;refreshStudent();}
-async function loadHistory(){const {data}=await supabase.from('parking_sessions').select('*,parking_slots(slot_number)').eq('user_id',profile.id).in('status',['completed','cancelled']).order('created_at',{ascending:false});historyContainer.innerHTML=!data?.length?'<p class="muted">No parking history yet.</p>':`<div class="table-wrap"><table><thead><tr><th>Date</th><th>Vehicle</th><th>Slot</th><th>Entry</th><th>Exit</th><th>Status</th></tr></thead><tbody>${data.map(s=>`<tr><td>${new Date(s.created_at).toLocaleDateString()}</td><td>${s.vehicle_number}</td><td>${s.parking_slots.slot_number}</td><td>${fmt(s.entry_time)}</td><td>${fmt(s.exit_time)}</td><td><span class="badge badge-${s.status}">${s.status}</span></td></tr>`).join('')}</tbody></table></div>`;}
-function fmt(v){return v?new Date(v).toLocaleString():'—';}
-function downloadQR(){const img=qrCode.querySelector('img')||qrCode.querySelector('canvas');const a=document.createElement('a');a.download='parking-qr.png';a.href=img.src||img.toDataURL('image/png');a.click();}
+// js/student.js
+let currentUserProfile = null;
+let selectedSlotId = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+    currentUserProfile = await checkAuthAndRole('student');
+    if (currentUserProfile) {
+        document.getElementById('welcomeMessage').textContent = `Welcome, ${currentUserProfile.name}`;
+        document.getElementById('vehicleDetails').innerHTML = `<p class="muted" style="margin:0;">Vehicle: <strong>${currentUserProfile.vehicle_number}</strong> (${currentUserProfile.vehicle_type.toUpperCase()})</p>`;
+        
+        checkCurrentSession();
+        loadHistory();
+    }
+});
+
+async function checkCurrentSession() {
+    const { data: sessions } = await supabase.from('parking_sessions').select('*, parking_slots(slot_number)').eq('user_id', currentUserProfile.id).in('status', ['pending', 'active']).order('created_at', { ascending: false }).limit(1);
+
+    if (sessions && sessions.length > 0) {
+        displayCurrentSession(sessions[0]);
+    } else {
+        document.getElementById('bookSlotSection').classList.remove('hidden');
+        loadParkingSlots();
+    }
+}
+
+function displayCurrentSession(session) {
+    document.getElementById('bookSlotSection').classList.add('hidden');
+    document.getElementById('currentSessionSection').classList.remove('hidden');
+    
+    document.getElementById('sessionDetails').innerHTML = `
+        <p style="margin-bottom:8px;">Slot: <strong>${session.parking_slots.slot_number}</strong></p>
+        <p>Status: <span class="badge badge-${session.status}">${session.status}</span></p>
+    `;
+
+    const qrContainer = document.getElementById('qrCode');
+    qrContainer.innerHTML = '';
+    new QRCode(qrContainer, { text: session.qr_token, width: 180, height: 180, colorDark: "#12355b" });
+    
+    document.getElementById('downloadQrBtn').classList.remove('hidden');
+    document.getElementById('downloadQrBtn').onclick = () => {
+        const img = qrContainer.querySelector('img');
+        if(!img) return;
+        const a = document.createElement('a');
+        a.href = img.src;
+        a.download = `QR_${session.qr_token}.png`;
+        a.click();
+    };
+}
+
+async function loadParkingSlots() {
+    const { data: slots } = await supabase.from('parking_slots').select('*').eq('vehicle_type', currentUserProfile.vehicle_type).order('slot_number');
+    const container = document.getElementById('slotsContainer');
+    container.innerHTML = '';
+
+    if (!slots || !slots.length) {
+        container.innerHTML = '<p class="muted">No slots available for your vehicle type.</p>';
+        return;
+    }
+
+    slots.forEach(slot => {
+        const btn = document.createElement('button');
+        btn.className = `slot ${slot.status}`;
+        btn.innerHTML = `<strong>${slot.slot_number}</strong><small>${slot.status}</small>`;
+        
+        if (slot.status === 'available') {
+            btn.onclick = () => {
+                document.querySelectorAll('.slot').forEach(el => el.classList.remove('selected'));
+                btn.classList.add('selected');
+                selectedSlotId = slot.id;
+                document.getElementById('bookBtn').classList.remove('hidden');
+            };
+        } else {
+            btn.disabled = true;
+        }
+        container.appendChild(btn);
+    });
+}
+
+async function createParkingSession() {
+    if (!selectedSlotId) return;
+    const msg = document.getElementById('booking-error');
+    msg.className = 'error-msg';
+    
+    const qrToken = 'PARK-' + crypto.randomUUID().split('-')[0].toUpperCase();
+    const { error } = await supabase.from('parking_sessions').insert([{
+        user_id: currentUserProfile.id,
+        slot_id: selectedSlotId,
+        vehicle_number: currentUserProfile.vehicle_number,
+        qr_token: qrToken,
+        status: 'pending'
+    }]);
+
+    if (error) {
+        msg.textContent = 'Error booking slot. It might have been taken.';
+        msg.classList.add('visible');
+    } else {
+        window.location.reload();
+    }
+}
+
+async function loadHistory() {
+    const { data: sessions } = await supabase.from('parking_sessions').select('*, parking_slots(slot_number)').eq('user_id', currentUserProfile.id).in('status', ['completed', 'cancelled']).order('created_at', { ascending: false });
+    const container = document.getElementById('historyContainer');
+    if (!sessions || !sessions.length) {
+        container.innerHTML = '<p class="muted">No previous parking history.</p>';
+        return;
+    }
+
+    let html = '';
+    sessions.forEach(s => {
+        html += `<div style="padding:12px 0; border-bottom: 1px solid var(--line);">
+            <strong>${s.parking_slots.slot_number}</strong> &nbsp; <span class="badge badge-${s.status}">${s.status}</span>
+            <div style="font-size:0.85rem; color:var(--muted); margin-top:4px;">
+                Entry: ${s.entry_time ? new Date(s.entry_time).toLocaleString() : 'N/A'} <br>
+                Exit: ${s.exit_time ? new Date(s.exit_time).toLocaleString() : 'N/A'}
+            </div>
+        </div>`;
+    });
+    container.innerHTML = html;
+}

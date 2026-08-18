@@ -1,5 +1,100 @@
-document.addEventListener('DOMContentLoaded',async()=>{if(await checkAuthAndRole('admin'))loadAdmin();});
-async function loadAdmin(){const [{data:slots},{data:sessions},{data:students}]=await Promise.all([supabase.from('parking_slots').select('*').order('slot_number'),supabase.from('parking_sessions').select('*,profiles(name),parking_slots(slot_number)').order('created_at',{ascending:false}),supabase.from('profiles').select('*').eq('role','student').order('name')]);statTotal.textContent=slots.length;statAvailable.textContent=slots.filter(x=>x.status==='available').length;statOccupied.textContent=slots.filter(x=>x.status==='occupied').length;statActiveSessions.textContent=sessions.filter(x=>x.status==='active').length;adminSlotsContainer.innerHTML=slots.map(s=>`<div class="slot ${s.status}"><b>${s.slot_number}</b><small>${s.vehicle_type}</small><span>${s.status}</span>${s.status==='available'?`<button class="link-danger" onclick="deleteSlot('${s.id}')">Delete</button>`:''}</div>`).join('');studentsTable.innerHTML=rows(students.map(p=>`<tr><td>${p.name}</td><td>${p.email}</td><td>${p.vehicle_number||'—'}</td><td>${p.vehicle_type||'—'}</td></tr>`),'Name,Email,Vehicle,Vehicle Type');activeTable.innerHTML=rows(sessions.filter(s=>['pending','active'].includes(s.status)).map(s=>sessionRow(s)),'Student,Vehicle,Slot,Entry Time,Status');historyTable.innerHTML=rows(sessions.filter(s=>['completed','cancelled'].includes(s.status)).map(s=>`<tr><td>${s.profiles.name}</td><td>${s.vehicle_number}</td><td>${s.parking_slots.slot_number}</td><td>${fmt(s.entry_time)}</td><td>${fmt(s.exit_time)}</td><td>${s.status}</td></tr>`),'Student,Vehicle,Slot,Entry,Exit,Status');}
-function rows(body,heads){return `<div class="table-wrap"><table><thead><tr>${heads.split(',').map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${body.join('')||'<tr><td colspan="6">No records found.</td></tr>'}</tbody></table></div>`;}function sessionRow(s){return `<tr><td>${s.profiles.name}</td><td>${s.vehicle_number}</td><td>${s.parking_slots.slot_number}</td><td>${fmt(s.entry_time)}</td><td>${s.status}</td></tr>`;}function fmt(v){return v?new Date(v).toLocaleString():'—';}
-async function addSlot(){const n=newSlotNumber.value.trim().toUpperCase();if(!n)return showMessage('admin-message','Please enter a slot number.');const {error}=await supabase.from('parking_slots').insert({slot_number:n,vehicle_type:newSlotType.value});if(error)return showMessage('admin-message','That slot could not be added. It may already exist.');newSlotNumber.value='';adminMessage.textContent='';loadAdmin();}
-async function deleteSlot(id){if(!confirm('Delete this available slot?'))return;const {error}=await supabase.from('parking_slots').delete().eq('id',id);if(error)return showMessage('admin-message','This slot cannot be deleted because it has parking history.');loadAdmin();}
+// js/admin.js
+document.addEventListener('DOMContentLoaded', async () => {
+    const profile = await checkAuthAndRole('admin');
+    if (profile) {
+        loadStats();
+        loadAdminSlots();
+        loadStudents();
+        loadActiveSessions();
+        loadHistory();
+    }
+});
+
+async function loadStats() {
+    try {
+        const { data: slots, error: slotsError } = await supabase.from('parking_slots').select('status');
+        if (slotsError) throw slotsError;
+        document.getElementById('statTotal').textContent = slots.length;
+        document.getElementById('statAvailable').textContent = slots.filter(s => s.status === 'available').length;
+        document.getElementById('statOccupied').textContent = slots.filter(s => s.status === 'occupied').length;
+
+        const { data: sessions, error: sessionsError } = await supabase.from('parking_sessions').select('id').eq('status', 'active');
+        if (sessionsError) throw sessionsError;
+        document.getElementById('statActiveSessions').textContent = sessions.length;
+    } catch (err) { console.error(err); }
+}
+
+async function loadAdminSlots() {
+    try {
+        const { data: slots, error } = await supabase.from('parking_slots').select('*').order('slot_number');
+        if (error) throw error;
+        const container = document.getElementById('adminSlotsContainer');
+        container.innerHTML = '';
+        slots.forEach(slot => {
+            container.innerHTML += `
+            <div class="slot ${slot.status}">
+                <strong>${slot.slot_number}</strong>
+                <small>${slot.vehicle_type}</small>
+                <button class="link-danger" onclick="deleteSlot('${slot.id}')">Delete</button>
+            </div>`;
+        });
+    } catch (err) { console.error(err); }
+}
+
+async function addSlot() {
+    const slotNumber = document.getElementById('newSlotNumber').value.trim().toUpperCase();
+    const vehicleType = document.getElementById('newSlotType').value;
+    const msg = document.getElementById('admin-message');
+    msg.className = 'error-msg';
+    
+    if (!slotNumber) { msg.textContent = "Please enter a slot number."; msg.classList.add('visible'); return; }
+
+    try {
+        const { error } = await supabase.from('parking_slots').insert([{ slot_number: slotNumber, vehicle_type: vehicleType }]);
+        if (error) throw error;
+        document.getElementById('newSlotNumber').value = '';
+        msg.classList.remove('visible');
+        loadStats();
+        loadAdminSlots();
+    } catch (err) { msg.textContent = "Error adding slot (maybe duplicate?)."; msg.classList.add('visible'); }
+}
+
+async function deleteSlot(id) {
+    if(!confirm("Are you sure?")) return;
+    await supabase.from('parking_slots').delete().eq('id', id);
+    loadStats();
+    loadAdminSlots();
+}
+
+async function loadStudents() {
+    const { data } = await supabase.from('profiles').select('*').eq('role', 'student');
+    const container = document.getElementById('studentsTable');
+    if (!data || !data.length) return container.innerHTML = '<p class="muted">No students found.</p>';
+    
+    let html = `<div class="table-wrap"><table><tr><th>Name</th><th>Vehicle</th><th>Type</th></tr>`;
+    data.forEach(s => html += `<tr><td>${s.name}</td><td>${s.vehicle_number}</td><td>${s.vehicle_type}</td></tr>`);
+    html += `</table></div>`;
+    container.innerHTML = html;
+}
+
+async function loadActiveSessions() {
+    const { data } = await supabase.from('parking_sessions').select('*, profiles(name), parking_slots(slot_number)').eq('status', 'active');
+    const container = document.getElementById('activeTable');
+    if (!data || !data.length) return container.innerHTML = '<p class="muted">No active sessions.</p>';
+    
+    let html = `<div class="table-wrap"><table><tr><th>Student</th><th>Slot</th><th>Vehicle</th><th>Entry Time</th></tr>`;
+    data.forEach(s => html += `<tr><td>${s.profiles.name}</td><td>${s.parking_slots.slot_number}</td><td>${s.vehicle_number}</td><td>${new Date(s.entry_time).toLocaleTimeString()}</td></tr>`);
+    html += `</table></div>`;
+    container.innerHTML = html;
+}
+
+async function loadHistory() {
+    const { data } = await supabase.from('parking_sessions').select('*, profiles(name), parking_slots(slot_number)').in('status', ['completed', 'cancelled']).order('created_at', {ascending: false}).limit(10);
+    const container = document.getElementById('historyTable');
+    if (!data || !data.length) return container.innerHTML = '<p class="muted">No history.</p>';
+    
+    let html = `<div class="table-wrap"><table><tr><th>Student</th><th>Slot</th><th>Status</th><th>Date</th></tr>`;
+    data.forEach(s => html += `<tr><td>${s.profiles?.name || 'N/A'}</td><td>${s.parking_slots?.slot_number || 'N/A'}</td><td><span class="badge badge-${s.status}">${s.status}</span></td><td>${new Date(s.created_at).toLocaleDateString()}</td></tr>`);
+    html += `</table></div>`;
+    container.innerHTML = html;
+}
