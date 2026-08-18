@@ -8,6 +8,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('welcomeMessage').textContent = `Welcome, ${currentUserProfile.name}`;
         document.getElementById('vehicleDetails').innerHTML = `<p class="muted" style="margin:0;">Vehicle: <strong>${currentUserProfile.vehicle_number}</strong> (${currentUserProfile.vehicle_type.toUpperCase()})</p>`;
         
+        // Generate permanent vehicle QR code
+        const vehicleQr = document.getElementById('vehicleQrCode');
+        if (vehicleQr) {
+            vehicleQr.innerHTML = '';
+            new QRCode(vehicleQr, { text: currentUserProfile.id, width: 100, height: 100, colorDark: "#12355b" });
+        }
+        
         checkCurrentSession();
         loadHistory();
     }

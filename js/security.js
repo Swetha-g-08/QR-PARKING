@@ -20,10 +20,26 @@ async function verifyToken(token) {
     const msg = document.getElementById('security-message');
     msg.className = 'error-msg';
     
-    const { data: session, error } = await supabase.from('parking_sessions').select('*, profiles(name), parking_slots(slot_number)').eq('qr_token', token).single();
+    // First try by session qr_token
+    let { data: session, error } = await supabase.from('parking_sessions').select('*, profiles(name), parking_slots(slot_number)').eq('qr_token', token).single();
+
+    // If not found, try treating token as user_id (permanent vehicle QR)
+    if (!session) {
+        const { data: userSessions } = await supabase.from('parking_sessions')
+            .select('*, profiles(name), parking_slots(slot_number)')
+            .eq('user_id', token)
+            .in('status', ['pending', 'active'])
+            .order('created_at', { ascending: false })
+            .limit(1);
+            
+        if (userSessions && userSessions.length > 0) {
+            session = userSessions[0];
+            error = null;
+        }
+    }
 
     if (error || !session) {
-        msg.textContent = 'Invalid or unknown QR code.';
+        msg.textContent = 'Invalid QR code or no active session found for this vehicle.';
         msg.classList.add('visible');
         return;
     }
