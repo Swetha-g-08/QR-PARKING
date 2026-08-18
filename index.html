@@ -1,1 +1,89 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="A simple, accessible QR parking experience."><title>ParkEase — QR Parking</title><link rel="stylesheet" href="style.css"></head><body><a class="skip-link" href="#main-content">Skip to main content</a><header class="site-header"><a class="brand" href="#" aria-label="ParkEase home"><span aria-hidden="true">P</span> ParkEase</a><button class="text-button" id="dashboard-link" type="button">Parking status</button></header><main id="main-content"><section id="landing-view" class="view hero" aria-labelledby="hero-title"><div class="hero-copy"><p class="eyebrow">CAMPUS PARKING, SIMPLIFIED</p><h1 id="hero-title">Park with less waiting and more ease.</h1><p class="lead">Scan your QR code, see a suitable space, and get on with your day.</p><button id="scan-cta" class="button button-primary" type="button" aria-describedby="scan-help"><span aria-hidden="true">⌁</span> Scan QR to Park</button><p id="scan-help" class="supporting-text">You can review live availability before confirming.</p></div><aside class="hero-panel" aria-label="How ParkEase works"><h2>Park in three small steps</h2><ol class="steps"><li><span>1</span><div><strong>Scan</strong><p>Open your unique parking QR code.</p></div></li><li><span>2</span><div><strong>Choose</strong><p>Pick an available zone that suits you.</p></div></li><li><span>3</span><div><strong>Park</strong><p>Confirm your session and drive in.</p></div></li></ol></aside></section><section id="dashboard-view" class="view dashboard" hidden aria-labelledby="dashboard-title"><div class="section-heading"><div><p class="eyebrow">LIVE PARKING STATUS</p><h1 id="dashboard-title" tabindex="-1">Find your space</h1><p>Choose a zone below. Availability is refreshed when you open this page.</p></div><button class="text-button" id="back-home" type="button">← Back home</button></div><div id="status-message" class="status-message" role="status" aria-live="polite">Loading parking availability…</div><section id="parking-grid" class="parking-grid" aria-label="Available parking zones"></section></section></main><footer class="site-footer"><p>ParkEase · QR-based campus parking</p><button class="text-button" id="footer-status" type="button">View availability</button></footer><div id="confirmation-modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-details"><div class="modal-backdrop" data-close-modal></div><section class="modal-card"><button class="icon-button" id="close-modal" type="button" aria-label="Close confirmation">×</button><div class="success-mark" aria-hidden="true">✓</div><p class="eyebrow">PARKING SESSION STARTED</p><h2 id="modal-title">You’re all set.</h2><div id="modal-details" class="session-details"></div><button class="button button-primary" id="done-button" type="button">Done</button></section></div><script src="script.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="An accessible, QR-based campus parking demonstration.">
+  <title>ParkEase — Campus Parking</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  <header class="site-header">
+    <button class="brand" type="button" data-route="landing" aria-label="ParkEase home"><span aria-hidden="true">P</span>ParkEase</button>
+    <nav aria-label="Primary navigation">
+      <button class="nav-link" type="button" data-route="login">Sign in</button>
+      <button class="nav-link" type="button" data-route="dashboard">Live parking</button>
+    </nav>
+  </header>
+
+  <main id="main-content">
+    <section class="view hero" id="landing-view" aria-labelledby="hero-title">
+      <div>
+        <p class="eyebrow">CAMPUS PARKING, SIMPLIFIED</p>
+        <h1 id="hero-title">A calmer way to arrive on campus.</h1>
+        <p class="lead">A simple QR pass and a clear parking space—without the usual searching and waiting.</p>
+        <div class="button-row">
+          <button class="button primary" type="button" data-route="login">Scan QR to Park</button>
+          <button class="button secondary" type="button" data-route="dashboard">See availability</button>
+        </div>
+      </div>
+      <aside class="journey-card" aria-label="How parking works">
+        <h2>Park in three small steps</h2>
+        <ol class="steps">
+          <li><span>1</span><div><strong>Sign in</strong><p>Register your vehicle or open your parking pass.</p></div></li>
+          <li><span>2</span><div><strong>Choose</strong><p>Find an available space in the live parking view.</p></div></li>
+          <li><span>3</span><div><strong>Scan</strong><p>Show the QR pass at the gate to start your session.</p></div></li>
+        </ol>
+      </aside>
+    </section>
+
+    <section class="view auth-view" id="login-view" hidden aria-labelledby="auth-title">
+      <div class="auth-card">
+        <button class="back-button" type="button" data-route="landing">← Back</button>
+        <p class="eyebrow">WELCOME TO PARKEASE</p><h1 id="auth-title">Sign in to park.</h1>
+        <div class="tabs" role="tablist" aria-label="Choose account role">
+          <button class="tab active" type="button" role="tab" aria-selected="true" aria-controls="student-form" id="student-tab">Student</button>
+          <button class="tab" type="button" role="tab" aria-selected="false" aria-controls="admin-form" id="admin-tab">Admin</button>
+        </div>
+        <form id="student-form" class="form" novalidate>
+          <label for="student-name">Your name</label><input id="student-name" name="name" autocomplete="name" required placeholder="e.g. Priya Kumar">
+          <label for="vehicle-number">Vehicle number</label><input id="vehicle-number" name="vehicle" required aria-describedby="vehicle-help" placeholder="TN 01 AB 1234">
+          <p class="field-help" id="vehicle-help">Your number is used only for this parking session.</p>
+          <label for="vehicle-type">Vehicle type</label><select id="vehicle-type" name="vehicleType"><option value="Bike">Bike</option><option value="Car">Car</option></select>
+          <p class="form-message" id="student-message" aria-live="polite"></p>
+          <button class="button primary" type="submit">Create parking pass</button>
+        </form>
+        <form id="admin-form" class="form" hidden novalidate>
+          <label for="admin-name">Admin name</label><input id="admin-name" autocomplete="username" required placeholder="Campus parking admin">
+          <label for="admin-pin">Access PIN</label><input id="admin-pin" type="password" inputmode="numeric" required placeholder="Any four digits">
+          <p class="form-message" id="admin-message" aria-live="polite"></p>
+          <button class="button primary" type="submit">Open admin dashboard</button>
+        </form>
+      </div>
+    </section>
+
+    <section class="view pass-view" id="pass-view" hidden aria-labelledby="pass-title">
+      <div class="section-heading"><div><p class="eyebrow">YOUR DIGITAL PARKING PASS</p><h1 id="pass-title">Ready when you are.</h1></div><button class="text-button" type="button" data-route="dashboard">Choose a space →</button></div>
+      <div class="pass-layout"><article class="qr-card"><div id="qr-visual" class="qr-visual" aria-label="Your generated parking QR code"></div><p id="qr-token" class="token"></p><button class="text-button" id="regenerate-qr" type="button">Generate a new pass</button></article><article class="session-card"><h2>Your parking details</h2><dl id="pass-details"></dl><p class="field-help">At the entrance, a warden scans this code to verify your parking session.</p><button class="button primary" type="button" data-route="scanner">Open scanner simulation</button></article></div>
+    </section>
+
+    <section class="view scanner-view" id="scanner-view" hidden aria-labelledby="scanner-title">
+      <div class="section-heading"><div><p class="eyebrow">GATE VERIFICATION</p><h1 id="scanner-title">Scan a parking pass.</h1><p>Use this safe simulation to verify and allot a space.</p></div><button class="text-button" type="button" data-route="dashboard">View spaces →</button></div>
+      <div class="scanner-layout"><section class="scanner-card" aria-label="QR scanner"><div class="scan-frame"><span aria-hidden="true"></span><p>Camera preview</p></div><button class="button primary" id="scan-button" type="button">Simulate QR scan</button><p class="field-help">No camera access is requested in this demonstration.</p></section><section class="scan-result" id="scan-result" aria-live="polite"><h2>Waiting for a scan</h2><p>Scan a generated parking pass to see its details.</p></section></div>
+    </section>
+
+    <section class="view dashboard-view" id="dashboard-view" hidden aria-labelledby="dashboard-title">
+      <div class="section-heading"><div><p class="eyebrow">LIVE PARKING STATUS</p><h1 id="dashboard-title" tabindex="-1">Find your space.</h1><p id="dashboard-intro">Choose a suitable available zone.</p></div><div class="button-row"><button class="text-button" type="button" id="refresh-data">Refresh</button><button class="text-button" type="button" data-route="scanner">Scanner</button></div></div>
+      <p id="status-message" class="status-message" role="status" aria-live="polite"></p>
+      <section id="parking-grid" class="parking-grid" aria-label="Parking zones"></section>
+    </section>
+  </main>
+  <footer class="site-footer"><p>ParkEase · QR-based campus parking</p><button class="text-button" type="button" data-route="landing">Home</button></footer>
+
+  <div class="modal" id="confirmation-modal" hidden role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-backdrop" data-close-modal></div>
+    <section class="modal-card"><button class="icon-button" id="close-modal" type="button" aria-label="Close confirmation">×</button><div class="success-mark" aria-hidden="true">✓</div><p class="eyebrow">PARKING SESSION CONFIRMED</p><h2 id="modal-title">You’re all set.</h2><div id="modal-details" class="modal-details"></div><button class="button primary" id="done-button" type="button">Done</button></section>
+  </div>
+  <script src="script.js"></script>
+</body></html>
