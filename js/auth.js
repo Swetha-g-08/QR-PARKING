@@ -1,29 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => { 
-    // Login Flow
-    const loginForm = document.getElementById('login-form');
-    if (loginForm) {
-        loginForm.addEventListener('submit', loginUser);
-        
-        // Check for registration success parameter
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('registered') === 'true') {
-            showMessage('login-error', 'Account created successfully. Please login.', true);
-            // Remove the query param so it doesn't show again on refresh
-            window.history.replaceState({}, document.title, 'login.html');
-            
-            // Clear message when user starts typing
-            const inputs = loginForm.querySelectorAll('input');
-            inputs.forEach(input => {
-                input.addEventListener('input', () => {
-                    const errorDiv = document.getElementById('login-error');
-                    if (errorDiv && errorDiv.classList.contains('success-msg')) {
-                        showMessage('login-error', '');
-                    }
-                }, { once: true });
-            });
-        }
-    }
-    
     // Register Flow
     document.getElementById('register-form')?.addEventListener('submit', registerUser); 
 });
@@ -37,18 +12,17 @@ function showMessage(id, text, success = false) {
 }
 
 async function getCurrentUser() { 
+    const studentId = sessionStorage.getItem('currentStudentId');
+    if (!studentId) return null;
+    
     try {
-        const res = await fetch('/api/session');
-        const data = await res.json();
-        if (data.session && data.session.user) {
-            // Set the token in the supabase client so RLS works
-            window.supabaseClient.realtime.setAuth(data.session.token);
-            // v2 client uses global headers or setSession
-            window.supabaseClient.auth.setSession({ access_token: data.session.token, refresh_token: '' });
-            return data.session.user;
-        }
+        const res = await fetch(`/api/profile?studentId=${studentId}`);
+        if (!res.ok) return null;
+        
+        const profile = await res.json();
+        return profile;
     } catch (e) {
-        console.error("Session error:", e);
+        console.error("Profile fetch error:", e);
     }
     return null; 
 }
@@ -60,47 +34,14 @@ async function getUserRole() {
 }
 
 function redirectBasedOnRole(role) { 
-    location.href = role === 'admin' ? 'admin.html' : role === 'security' ? 'security.html' : role === 'student' ? 'student.html' : 'index.html'; 
+    location.href = role === 'admin' ? 'admin.html' : role === 'security' ? 'security.html' : role === 'student' ? 'dashboard.html' : 'index.html'; 
 }
 
 function getInternalEmail(studentId) {
     return `${studentId.trim().toLowerCase()}@campuspark.local`;
 }
 
-// ----- LOGIN -----
-async function loginUser(e) {
-    e.preventDefault();
-    const btn = e.target.querySelector('button[type="submit"]');
-    const studentId = document.getElementById('student_id').value.trim().toUpperCase();
-    const password = document.getElementById('password').value;
-    
-    if (!studentId || !password) return showMessage('login-error', 'Please enter your Student ID and password.');
-    
-    showMessage('login-error', '');
-    if (btn) setLoading(btn, true, 'Logging in...');
-    
-    try {
-        const res = await fetch('/api/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ studentId, password })
-        });
-        
-        const data = await res.json();
-        if (!res.ok || data.error) {
-            return showMessage('login-error', data.error || 'Invalid Student ID or password.');
-        }
-        
-        const p = await getUserRole(); 
-        if (!p) return showMessage('login-error', 'Account not found. Please create an account.'); 
-        redirectBasedOnRole(p.role); 
-    } catch (error) {
-        console.error("LOGIN ERROR:", error);
-        showMessage('login-error', `System Error: ${error.message || 'Unknown error occurred'}`);
-    } finally {
-        if (btn) setLoading(btn, false);
-    }
-}
+
 
 // ----- REGISTER -----
 async function registerUser(e) {
@@ -136,7 +77,8 @@ async function registerUser(e) {
             return showMessage('register-error', data.error || 'Unable to create account. Please try again.');
         }
 
-        window.location.href = 'login.html?registered=true';
+        sessionStorage.setItem('currentStudentId', studentId);
+        window.location.href = 'dashboard.html';
     } catch (error) {
         console.error("REGISTER ERROR:", error);
         showMessage('register-error', `System Error: ${error.message || 'Unknown error occurred'}`);
@@ -146,16 +88,14 @@ async function registerUser(e) {
 }
 
 async function logoutUser() { 
-    try {
-        await fetch('/api/logout');
-    } catch(e) {}
+    sessionStorage.clear();
     location.href = 'index.html'; 
 }
 
 async function checkAuthAndRole(expected) { 
     const p = await getUserRole(); 
     if (!p) { 
-        location.href = 'login.html'; 
+        location.href = 'register.html'; 
         return null; 
     } 
     if (expected && p.role !== expected) { 

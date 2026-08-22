@@ -28,8 +28,7 @@
         </nav>
         
         <div class="landing-actions">
-            <button class="btn btn-secondary" onclick="window.location.href='login.html'">Login</button>
-            <button class="btn" onclick="window.location.href='login.html'">Get Started <i data-lucide="arrow-right" size="16"></i></button>
+            <button class="btn" onclick="window.location.href='register.html'">Get Started <i data-lucide="arrow-right" size="16"></i></button>
         </div>
     </header>
 
@@ -40,7 +39,7 @@
                 <h1 class="hero-title">Smart Parking,<br>Simplified.</h1>
                 <p class="hero-subtitle">Reserve your college parking slot, generate a secure QR pass, and enter and exit campus parking without the hassle.</p>
                 <div style="display:flex; gap:16px;">
-                    <button class="btn" style="padding: 14px 24px; font-size:14px;" onclick="window.location.href='login.html'">Get Started <i data-lucide="arrow-right" size="16"></i></button>
+                    <button class="btn" style="padding: 14px 24px; font-size:14px;" onclick="window.location.href='register.html'">Get Started <i data-lucide="arrow-right" size="16"></i></button>
                     <button class="btn btn-secondary" style="padding: 14px 24px; font-size:14px;" onclick="document.getElementById('parking-preview').scrollIntoView();">View Parking</button>
                 </div>
             </div>
@@ -156,7 +155,7 @@
                     <h2 style="font-size:32px; font-weight:700; margin-bottom:24px; line-height:1.2;">Your parking pass,<br>always ready.</h2>
                     <p class="muted" style="font-size:16px; margin-bottom:40px; line-height:1.6;">Your reservation is securely linked to a unique QR code. Security can verify your vehicle and assigned parking slot instantly directly from the cloud.</p>
                     <div>
-                        <button class="btn" onclick="window.location.href='login.html'">Get Your QR <i data-lucide="arrow-right" size="16"></i></button>
+                        <button class="btn" onclick="window.location.href='register.html'">Get Your QR <i data-lucide="arrow-right" size="16"></i></button>
                     </div>
                 </div>
                 <div class="split-visual">
@@ -239,7 +238,6 @@
                     <h2 style="font-size:32px; font-weight:700; margin-bottom:24px; line-height:1.2;">Parking verification,<br>without paperwork.</h2>
                     <p class="muted" style="font-size:16px; margin-bottom:40px; line-height:1.6;">Security wardens can use any mobile device to scan QR codes and instantly verify parking reservations against the real-time database.</p>
                     <div>
-                        <button class="btn btn-secondary" onclick="window.location.href='login.html'"><i data-lucide="shield-check" size="16"></i> Security Login</button>
                     </div>
                 </div>
             </div>
@@ -250,8 +248,7 @@
             <h2 style="font-size:36px; font-weight:700; margin-bottom:16px;">Ready to park smarter?</h2>
             <p class="muted" style="font-size:16px; margin-bottom:40px; max-width:500px; margin-left:auto; margin-right:auto;">Reserve your parking slot and get your secure QR pass in seconds.</p>
             <div style="display:flex; gap:16px; justify-content:center;">
-                <button class="btn" style="padding: 14px 32px; font-size:14px;" onclick="window.location.href='login.html'">Get Started <i data-lucide="arrow-right" size="16"></i></button>
-                <button class="btn btn-secondary" style="padding: 14px 32px; font-size:14px;" onclick="window.location.href='login.html'">Login</button>
+                <button class="btn" style="padding: 14px 32px; font-size:14px;" onclick="window.location.href='register.html'">Get Started <i data-lucide="arrow-right" size="16"></i></button>
             </div>
         </section>
     </main>
@@ -264,7 +261,7 @@
         <div class="footer-links">
             <a href="#features">Features</a>
             <a href="#how-it-works">How It Works</a>
-            <a href="login.html">Login</a>
+            <a href="register.html">Login</a>
             <a href="#">Privacy</a>
         </div>
         <div style="color:var(--text-muted); font-size:13px;">
@@ -326,7 +323,7 @@
                     btn.innerHTML = `<strong>${slot.slot_number}</strong>`;
                     
                     // Always redirect to login on homepage
-                    btn.onclick = () => window.location.href = 'login.html';
+                    btn.onclick = () => window.location.href = 'register.html';
                     
                     if (slot.status !== 'available') {
                         btn.disabled = true;
@@ -365,7 +362,7 @@
                     const btn = document.createElement('button');
                     btn.className = `slot ${status}`;
                     btn.innerHTML = `<strong>${r}-0${i}</strong>`;
-                    btn.onclick = () => window.location.href = 'login.html';
+                    btn.onclick = () => window.location.href = 'register.html';
                     if (status !== 'available') btn.disabled = true;
                     
                     rowDiv.appendChild(btn);

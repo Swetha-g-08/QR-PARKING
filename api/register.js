@@ -1,7 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import { serialize } from 'cookie';
 import crypto from 'crypto';
 
 const supabaseUrl = process.env.SUPABASE_URL || 'YOUR_SUPABASE_URL';
@@ -26,7 +24,7 @@ export default async function handler(req, res) {
       .maybeSingle();
 
     if (existingUser) {
-      return res.status(400).json({ error: 'Student ID already registered. Please login.' });
+      return res.status(400).json({ error: 'Student ID is already registered.' });
     }
 
     const password_hash = await bcrypt.hash(password, 10);
