@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { serialize } from 'cookie';
+import crypto from 'crypto';
 
 const supabaseUrl = process.env.SUPABASE_URL || 'YOUR_SUPABASE_URL';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'YOUR_SERVICE_ROLE_KEY';
@@ -38,6 +39,7 @@ export default async function handler(req, res) {
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .insert([{ 
+        id: crypto.randomUUID(),
         name: name, 
         email: mappedEmail, 
         phone: password_hash, 
