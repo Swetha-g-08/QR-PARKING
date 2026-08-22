@@ -8,7 +8,7 @@ let activeTab = 'tab-dashboard';
 document.addEventListener('DOMContentLoaded', async () => {
     currentUserProfile = await checkAuthAndRole('student');
     if (currentUserProfile) {
-        document.getElementById('welcomeMessage').textContent = `Good evening, ${currentUserProfile.full_name.split(' ')[0]}`;
+        document.getElementById('welcomeMessage').textContent = `Welcome, ${currentUserProfile.name}`;
         
         setupNavigation();
         await refreshAllData();
@@ -56,6 +56,14 @@ async function refreshAllData() {
     await loadParkingSlots();
     await loadHistory();
     updateDashboardStats();
+
+    // Populate Settings form
+    document.getElementById('set_name').value = currentUserProfile.name || '';
+    document.getElementById('set_student_id').value = currentUserProfile.student_id || '';
+    document.getElementById('set_vehicle_number').value = currentUserProfile.vehicle_number || '';
+    if (currentUserProfile.vehicle_type) {
+        document.getElementById('set_vehicle_type').value = currentUserProfile.vehicle_type;
+    }
 }
 
 // -----------------------------------------------------
@@ -66,7 +74,7 @@ async function updateVehicleTab() {
     const vNone = document.getElementById('noVehicleState');
     const vEdit = document.getElementById('editVehicleBtn');
     
-    if (currentUserProfile.vehicle_id) {
+    if (currentUserProfile.vehicle_number) {
         vCard.classList.remove('hidden');
         vNone.classList.add('hidden');
         vEdit.classList.remove('hidden');
@@ -98,18 +106,23 @@ async function saveVehicle(e) {
     setLoading(btn, true, 'Saving...');
     
     try {
-        if (currentUserProfile.vehicle_id) {
-            // Update
-            const { error } = await supabase.from('vehicles').update({ vehicle_number: vNum, vehicle_type: vType }).eq('id', currentUserProfile.vehicle_id);
-            if (error) throw error;
-            showToast('Vehicle updated successfully', 'success');
-        } else {
-            // Insert
-            const { data, error } = await supabase.from('vehicles').insert([{ user_id: currentUserProfile.id, vehicle_number: vNum, vehicle_type: vType }]).select().single();
-            if (error) throw error;
-            currentUserProfile.vehicle_id = data.id;
-            showToast('Vehicle added successfully', 'success');
+        const res = await fetch('/api/profile', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                studentId: currentUserProfile.student_id,
+                name: currentUserProfile.name,
+                vehicle_number: vNum,
+                vehicle_type: vType
+            })
+        });
+
+        if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.error || 'Failed to update vehicle');
         }
+
+        showToast('Vehicle updated successfully', 'success');
         
         currentUserProfile.vehicle_number = vNum;
         currentUserProfile.vehicle_type = vType;
@@ -129,7 +142,7 @@ async function deleteVehicle() {
     const msg = document.getElementById('modal-delete-error');
     msg.classList.remove('visible');
     
-    if (!currentUserProfile.vehicle_id) return;
+    if (!currentUserProfile.vehicle_number) return;
     
     setLoading(btn, true, 'Deleting...');
     
@@ -138,18 +151,79 @@ async function deleteVehicle() {
         const { data: res } = await supabase.from('parking_reservations').select('id').eq('user_id', currentUserProfile.id).in('status', ['reserved', 'active']);
         if (res && res.length > 0) throw new Error("Cannot delete vehicle with an active parking reservation.");
 
-        const { error } = await supabase.from('vehicles').delete().eq('id', currentUserProfile.vehicle_id);
-        if (error) throw error;
+        const updateRes = await fetch('/api/profile', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                studentId: currentUserProfile.student_id,
+                name: currentUserProfile.name,
+                vehicle_number: '',
+                vehicle_type: ''
+            })
+        });
+
+        if (!updateRes.ok) {
+            const data = await updateRes.json();
+            throw new Error(data.error || 'Failed to delete vehicle');
+        }
         
-        currentUserProfile.vehicle_id = null;
-        currentUserProfile.vehicle_number = null;
-        currentUserProfile.vehicle_type = null;
+        currentUserProfile.vehicle_number = '';
+        currentUserProfile.vehicle_type = '';
         
         showToast('Vehicle deleted', 'success');
         closeModal('deleteVehicleModal');
         await refreshAllData();
     } catch (err) {
         msg.textContent = err.message || 'Error deleting vehicle';
+        msg.classList.add('visible');
+    } finally {
+        setLoading(btn, false);
+    }
+}
+
+// -----------------------------------------------------
+// SETTINGS MANAGEMENT
+// -----------------------------------------------------
+async function saveSettings(e) {
+    e.preventDefault();
+    const btn = document.getElementById('saveSettingsBtn');
+    const msg = document.getElementById('settings-error');
+    msg.classList.remove('visible');
+    
+    const sName = document.getElementById('set_name').value.trim();
+    const sVNum = document.getElementById('set_vehicle_number').value.trim().toUpperCase();
+    const sVType = document.getElementById('set_vehicle_type').value;
+    
+    setLoading(btn, true, 'Saving...');
+    
+    try {
+        const updateRes = await fetch('/api/profile', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                studentId: currentUserProfile.student_id,
+                name: sName,
+                vehicle_number: sVNum,
+                vehicle_type: sVType
+            })
+        });
+
+        if (!updateRes.ok) {
+            const data = await updateRes.json();
+            throw new Error(data.error || 'Failed to update settings');
+        }
+
+        const data = await updateRes.json();
+        currentUserProfile.name = data.name;
+        currentUserProfile.vehicle_number = data.vehicle_number;
+        currentUserProfile.vehicle_type = data.vehicle_type;
+        
+        document.getElementById('welcomeMessage').textContent = `Welcome, ${currentUserProfile.name}`;
+        
+        showToast('Settings saved successfully', 'success');
+        await refreshAllData();
+    } catch (err) {
+        msg.textContent = err.message || 'Error saving settings';
         msg.classList.add('visible');
     } finally {
         setLoading(btn, false);

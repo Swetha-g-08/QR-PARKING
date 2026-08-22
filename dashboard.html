@@ -38,12 +38,12 @@
                 </a>
             </nav>
             <div class="sidebar-bottom">
-                <button class="nav-item" data-tooltip="Settings" onclick="showToast('Settings coming soon')">
+                <a href="#settings" class="nav-item" data-tab="tab-settings" data-tooltip="Settings">
                     <i data-lucide="settings"></i>
-                </button>
-                <button class="nav-item" onclick="logoutUser()" data-tooltip="Logout">
-                    <i data-lucide="log-out"></i>
-                </button>
+                </a>
+                <a href="#" class="nav-item" onclick="logoutUser()" data-tooltip="Back to Home">
+                    <i data-lucide="home"></i>
+                </a>
             </div>
         </aside>
 
@@ -200,6 +200,38 @@
                         <div class="table-wrap">
                             <div id="historyTableContainer"></div>
                         </div>
+                    </section>
+                </div>
+
+                <!-- TAB: SETTINGS -->
+                <div id="tab-settings" class="tab-pane hidden">
+                    <section class="card">
+                        <h2 style="margin-top:0; margin-bottom:24px;">Settings</h2>
+                        <form id="settingsForm" onsubmit="saveSettings(event)">
+                            <div class="form-group">
+                                <label>Full Name</label>
+                                <input type="text" id="set_name" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Student ID</label>
+                                <input type="text" id="set_student_id" required disabled style="opacity:0.7; cursor:not-allowed;">
+                            </div>
+                            <div class="form-group">
+                                <label>Vehicle Number</label>
+                                <input type="text" id="set_vehicle_number" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Vehicle Type</label>
+                                <select id="set_vehicle_type" required>
+                                    <option value="bike">Bike</option>
+                                    <option value="car">Car</option>
+                                </select>
+                            </div>
+                            <p id="settings-error" class="error-msg"></p>
+                            <div style="margin-top:24px;">
+                                <button type="submit" class="btn" id="saveSettingsBtn">Save Changes</button>
+                            </div>
+                        </form>
                     </section>
                 </div>
 
