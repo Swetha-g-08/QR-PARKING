@@ -1,1 +1,217 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin Dashboard</title><link rel="stylesheet" href="css/style.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script defer src="js/config.js"></script><script defer src="js/supabase.js"></script><script defer src="js/auth.js"></script><script defer src="js/admin.js"></script></head><body><nav><a href="admin.html">College Parking</a><span>Admin Dashboard</span><button class="nav-btn" onclick="logoutUser()">Logout</button></nav><main class="container"><section class="stats"><div class="card"><small>Total Slots</small><strong id="statTotal">0</strong></div><div class="card"><small>Available Slots</small><strong id="statAvailable">0</strong></div><div class="card"><small>Occupied Slots</small><strong id="statOccupied">0</strong></div><div class="card"><small>Active Sessions</small><strong id="statActiveSessions">0</strong></div></section><section class="card"><h2>Parking Slot Management</h2><div class="inline-form"><input id="newSlotNumber" placeholder="Slot number e.g. B11"><select id="newSlotType"><option value="bike">Bike</option><option value="car">Car</option></select><button class="btn" onclick="addSlot()">Add Slot</button></div><p id="admin-message" class="error-msg"></p><div id="adminSlotsContainer" class="slots"></div></section><section class="card"><h2>Students</h2><div id="studentsTable"></div></section><section class="card"><h2>Active Parking Sessions</h2><div id="activeTable"></div></section><section class="card"><h2>Parking History</h2><div id="historyTable"></div></section></main></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Admin Dashboard | ParkEase</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script defer src="js/config.js"></script>
+    <script defer src="js/supabase.js"></script>
+    <script defer src="js/auth.js"></script>
+    <script defer src="js/admin.js"></script>
+</head>
+<body>
+    <div class="dashboard-wrapper">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <i data-lucide="parking-circle"></i>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#overview" class="nav-item active" data-tab="tab-overview" data-tooltip="Overview">
+                    <i data-lucide="layout-dashboard"></i>
+                </a>
+                <a href="#slots" class="nav-item" data-tab="tab-slots" data-tooltip="Slot Management">
+                    <i data-lucide="map"></i>
+                </a>
+                <a href="#students" class="nav-item" data-tab="tab-students" data-tooltip="Students">
+                    <i data-lucide="users"></i>
+                </a>
+                <a href="#sessions" class="nav-item" data-tab="tab-sessions" data-tooltip="Active Sessions">
+                    <i data-lucide="activity"></i>
+                </a>
+            </nav>
+            <div class="sidebar-bottom">
+                <button class="nav-item" data-tooltip="Settings" onclick="showToast('Settings coming soon')">
+                    <i data-lucide="settings"></i>
+                </button>
+                <button class="nav-item" onclick="logoutUser()" data-tooltip="Logout">
+                    <i data-lucide="log-out"></i>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="top-header">
+                <div class="header-left">
+                    <div class="page-title">Enterprise Control Center</div>
+                    <div class="page-subtitle">Manage campus parking infrastructure.</div>
+                </div>
+                <div class="header-right">
+                    <button class="header-icon" onclick="showToast('Search coming soon')"><i data-lucide="search" size="18"></i></button>
+                    <button class="header-icon" onclick="showToast('No new notifications')"><i data-lucide="bell" size="18"></i></button>
+                    <div class="user-profile">
+                        <div class="avatar" style="background: rgba(185, 255, 241, 0.1); color: var(--accent-primary);"><i data-lucide="shield" size="16"></i></div>
+                        <span class="user-name">Admin</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard Content -->
+            <div class="dashboard-container">
+                
+                <!-- TAB: OVERVIEW -->
+                <div id="tab-overview" class="tab-pane">
+                    <section class="stats-grid">
+                        <div class="stat-card" style="cursor:pointer;" onclick="switchTab('tab-slots'); filterSlots('all');">
+                            <div class="stat-title"><i data-lucide="hash" size="14"></i> Total Slots</div>
+                            <div class="stat-value" id="statTotal">0</div>
+                        </div>
+                        <div class="stat-card" style="cursor:pointer;" onclick="switchTab('tab-slots'); filterSlots('available');">
+                            <div class="stat-title"><i data-lucide="check-circle-2" size="14"></i> Available</div>
+                            <div class="stat-value" id="statAvailable" style="color: var(--accent-primary);">0</div>
+                        </div>
+                        <div class="stat-card" style="cursor:pointer;" onclick="switchTab('tab-slots'); filterSlots('occupied');">
+                            <div class="stat-title"><i data-lucide="x-circle" size="14"></i> Occupied</div>
+                            <div class="stat-value" id="statOccupied" style="color: var(--text-muted);">0</div>
+                        </div>
+                        <div class="stat-card" style="cursor:pointer;" onclick="switchTab('tab-sessions');">
+                            <div class="stat-title"><i data-lucide="activity" size="14"></i> Active Sessions</div>
+                            <div class="stat-value" id="statActiveSessions" style="color: var(--success);">0</div>
+                        </div>
+                    </section>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                        <!-- Active Sessions -->
+                        <section class="card" style="margin-bottom: 0;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                                <h2 style="margin:0;">Recent Active</h2>
+                                <button class="btn btn-secondary" style="padding:4px 8px; font-size:11px;" onclick="switchTab('tab-sessions')">View All</button>
+                            </div>
+                            <div class="table-wrap">
+                                <div id="activeTableDash"></div>
+                            </div>
+                        </section>
+
+                        <!-- History -->
+                        <section class="card" style="margin-bottom: 0;">
+                            <h2>Recent History</h2>
+                            <div class="table-wrap">
+                                <div id="historyTableDash"></div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+
+                <!-- TAB: SLOTS -->
+                <div id="tab-slots" class="tab-pane hidden">
+                    <section class="card">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+                            <div>
+                                <h2 style="margin:0;">Parking Slot Management</h2>
+                                <p class="muted">Add, remove, and filter parking slots.</p>
+                            </div>
+                            <div style="display:flex; gap:12px;">
+                                <select id="slotFilter" class="btn btn-secondary" style="padding: 8px 12px; margin-bottom:0;" onchange="filterSlots(this.value)">
+                                    <option value="all">All Status</option>
+                                    <option value="available">Available</option>
+                                    <option value="reserved">Reserved</option>
+                                    <option value="occupied">Occupied</option>
+                                </select>
+                                <button class="btn" onclick="openModal('addSlotModal')"><i data-lucide="plus" size="16"></i> Add Slot</button>
+                            </div>
+                        </div>
+                        
+                        <div id="adminSlotsContainer"></div>
+                    </section>
+                </div>
+
+                <!-- TAB: STUDENTS -->
+                <div id="tab-students" class="tab-pane hidden">
+                    <section class="card">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                            <h2 style="margin:0;">Registered Students</h2>
+                            <button class="btn btn-secondary" onclick="loadStudents()"><i data-lucide="refresh-cw" size="14"></i> Refresh</button>
+                        </div>
+                        <div class="table-wrap">
+                            <div id="studentsTable"></div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- TAB: SESSIONS -->
+                <div id="tab-sessions" class="tab-pane hidden">
+                    <section class="card" style="margin-bottom:24px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                            <h2 style="margin:0;">Active Parking Sessions</h2>
+                            <button class="btn btn-secondary" onclick="loadActiveSessions()"><i data-lucide="refresh-cw" size="14"></i> Refresh</button>
+                        </div>
+                        <div class="table-wrap">
+                            <div id="activeTableFull"></div>
+                        </div>
+                    </section>
+                    <section class="card">
+                        <h2>Full History</h2>
+                        <div class="table-wrap">
+                            <div id="historyTableFull"></div>
+                        </div>
+                    </section>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- MODALS -->
+
+    <!-- Add Slot Modal -->
+    <div id="addSlotModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Parking Slot</h2>
+                <button class="modal-close" onclick="closeModal('addSlotModal')"><i data-lucide="x" size="20"></i></button>
+            </div>
+            <form onsubmit="addSlot(event)">
+                <div class="form-group">
+                    <label>Slot Number</label>
+                    <input type="text" id="newSlotNumber" required placeholder="e.g. B11">
+                </div>
+                <div class="form-group">
+                    <label>Vehicle Type</label>
+                    <select id="newSlotType" required>
+                        <option value="bike">Bike</option>
+                        <option value="car">Car</option>
+                    </select>
+                </div>
+                <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:24px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addSlotModal')">Cancel</button>
+                    <button type="submit" class="btn" id="saveSlotBtn">Save Slot</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Slot Modal -->
+    <div id="deleteSlotModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Delete Slot?</h2>
+                <button class="modal-close" onclick="closeModal('deleteSlotModal')"><i data-lucide="x" size="20"></i></button>
+            </div>
+            <p style="margin-bottom:24px; color:var(--text-secondary);">Are you sure you want to delete slot <strong id="deleteSlotNumber" style="color:var(--text-primary);"></strong>?</p>
+            <div style="display:flex; gap:12px; justify-content:flex-end;">
+                <button class="btn btn-secondary" onclick="closeModal('deleteSlotModal')">Cancel</button>
+                <button class="btn btn-danger" id="confirmDeleteSlotBtn">Delete Slot</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

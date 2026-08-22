@@ -1,1 +1,285 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Student Dashboard</title><link rel="stylesheet" href="css/style.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script><script defer src="js/config.js"></script><script defer src="js/supabase.js"></script><script defer src="js/auth.js"></script><script defer src="js/student.js"></script></head><body><nav><a href="student.html">College Parking</a><span>Dashboard</span><button class="nav-btn" onclick="logoutUser()">Logout</button></nav><main class="container"><section class="card"><h1 id="welcomeMessage">Welcome</h1><div id="vehicleDetails"></div></section><section class="card hidden" id="currentSessionSection" style="text-align:center;"><h2 style="text-transform:uppercase; font-size:1.1rem; color:var(--muted); letter-spacing:1px; margin-bottom:20px;">YOUR DIGITAL PARKING PASS</h2><div id="qrCode" style="margin: 0 auto;"></div><div id="sessionDetails" style="text-align:left; margin-top:20px;"></div><button id="downloadQrBtn" class="btn hidden" style="margin-top:20px;" onclick="downloadQR()">Download QR</button></section><section class="card hidden" id="bookSlotSection"><h2>Available Parking</h2><p>Select a slot matching your vehicle.</p><div id="slotsContainer" class="slots"></div><p id="booking-error" class="error-msg"></p><button id="bookBtn" class="btn hidden" onclick="createParkingSession()">Confirm Parking</button></section><section class="card"><h2>Parking History</h2><div id="historyContainer"></div></section></main></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Student Dashboard | ParkEase</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script defer src="js/config.js"></script>
+    <script defer src="js/supabase.js"></script>
+    <script defer src="js/auth.js"></script>
+    <script defer src="js/student.js"></script>
+</head>
+<body>
+    <div class="dashboard-wrapper">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <i data-lucide="parking-circle"></i>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#dashboard" class="nav-item active" data-tab="tab-dashboard" data-tooltip="Dashboard">
+                    <i data-lucide="layout-dashboard"></i>
+                </a>
+                <a href="#vehicle" class="nav-item" data-tab="tab-vehicle" data-tooltip="Vehicle">
+                    <i data-lucide="car"></i>
+                </a>
+                <a href="#parking" class="nav-item" data-tab="tab-parking" data-tooltip="Parking">
+                    <i data-lucide="map"></i>
+                </a>
+                <a href="#qr" class="nav-item hidden" id="navQr" data-tab="tab-qr" data-tooltip="My QR">
+                    <i data-lucide="qr-code"></i>
+                </a>
+                <a href="#history" class="nav-item" data-tab="tab-history" data-tooltip="History">
+                    <i data-lucide="history"></i>
+                </a>
+            </nav>
+            <div class="sidebar-bottom">
+                <button class="nav-item" data-tooltip="Settings" onclick="showToast('Settings coming soon')">
+                    <i data-lucide="settings"></i>
+                </button>
+                <button class="nav-item" onclick="logoutUser()" data-tooltip="Logout">
+                    <i data-lucide="log-out"></i>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="top-header">
+                <div class="header-left">
+                    <div class="page-title" id="welcomeMessage">Loading...</div>
+                    <div class="page-subtitle">Here's your parking overview.</div>
+                </div>
+                <div class="header-right">
+                    <button class="header-icon" onclick="showToast('Search coming soon')"><i data-lucide="search" size="18"></i></button>
+                    <button class="header-icon" onclick="showToast('No new notifications')"><i data-lucide="bell" size="18"></i></button>
+                    <div class="user-profile">
+                        <div class="avatar"><i data-lucide="user" size="16"></i></div>
+                        <i data-lucide="chevron-down" size="16" class="muted"></i>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard Content -->
+            <div class="dashboard-container">
+                
+                <!-- TAB: DASHBOARD -->
+                <div id="tab-dashboard" class="tab-pane">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-title"><i data-lucide="activity" size="14"></i> Status</div>
+                            <div class="stat-value" id="dashStatus">Loading...</div>
+                            <div class="stat-desc" id="dashSlot">--</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-title"><i data-lucide="car" size="14"></i> Vehicle</div>
+                            <div class="stat-value" id="dashVehicle">--</div>
+                            <div class="stat-desc" id="dashVehicleType">--</div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <div class="grid-left">
+                            <section class="card">
+                                <h2>Recent Activity</h2>
+                                <div id="historyContainerDash">
+                                    <div class="timeline" id="recentTimeline">
+                                        <!-- Populated via JS -->
+                                    </div>
+                                </div>
+                                <button class="btn btn-secondary" style="width:100%; margin-top:16px;" onclick="document.querySelector('[data-tab=\'tab-history\']').click()">View Full History</button>
+                            </section>
+                        </div>
+                        <div class="grid-right">
+                            <section class="card">
+                                <h2>Quick Actions</h2>
+                                <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
+                                    <a href="#parking" onclick="document.querySelector('[data-tab=\'tab-parking\']').click()" class="card card-secondary" style="margin: 0; padding: 16px; display: flex; align-items: center; gap: 16px; text-decoration: none;">
+                                        <div style="background: rgba(185, 255, 241, 0.1); color: var(--accent-primary); padding: 10px; border-radius: var(--radius-md);">
+                                            <i data-lucide="map-pin" size="20"></i>
+                                        </div>
+                                        <div>
+                                            <div style="color: var(--text-primary); font-weight: 500; font-size: 13px;">Find Parking</div>
+                                            <div style="color: var(--text-muted); font-size: 11px;">View available slots</div>
+                                        </div>
+                                    </a>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: VEHICLE -->
+                <div id="tab-vehicle" class="tab-pane hidden">
+                    <section class="card" id="vehicleCard">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
+                            <h2 style="margin:0;">My Vehicle</h2>
+                            <button class="btn hidden" id="editVehicleBtn" onclick="openModal('vehicleModal')"><i data-lucide="edit-2" size="14"></i> Edit</button>
+                        </div>
+                        
+                        <div id="vehicleDetails" class="hidden" style="background:var(--card-secondary); padding:20px; border-radius:var(--radius-md); display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <div style="font-size:24px; font-weight:700; font-family:monospace; letter-spacing:2px; color:var(--accent-primary);" id="vehNumberDisplay">--</div>
+                                <div style="color:var(--text-muted); text-transform:uppercase; font-size:12px; margin-top:4px;" id="vehTypeDisplay">--</div>
+                            </div>
+                            <button class="btn btn-danger" onclick="openModal('deleteVehicleModal')"><i data-lucide="trash-2" size="16"></i> Delete</button>
+                        </div>
+
+                        <div id="noVehicleState" class="hidden" style="text-align:center; padding: 40px 20px;">
+                            <div style="background:var(--card-secondary); width:64px; height:64px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; color:var(--text-muted);">
+                                <i data-lucide="car" size="32"></i>
+                            </div>
+                            <h3 style="color:var(--text-primary); margin-bottom:8px;">No Vehicle Registered</h3>
+                            <p class="muted" style="margin-bottom:24px;">Register your vehicle to use the parking system.</p>
+                            <button class="btn" onclick="openModal('vehicleModal')">Register Vehicle</button>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- TAB: PARKING -->
+                <div id="tab-parking" class="tab-pane hidden">
+                    <section class="card" id="bookSlotSection">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+                            <div>
+                                <h2 style="margin:0;">Find Parking</h2>
+                                <p class="muted">Choose an available slot for your vehicle.</p>
+                            </div>
+                            <button class="btn btn-secondary" onclick="loadParkingSlots()"><i data-lucide="refresh-cw" size="14"></i> Refresh</button>
+                        </div>
+                        
+                        <div style="display: flex; gap: 16px; margin-bottom: 24px; font-size: 12px;">
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <div style="width: 12px; height: 12px; border-radius: 4px; border: 1px solid rgba(185, 255, 241, 0.2);"></div>
+                                <span class="muted">Available</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <div style="width: 12px; height: 12px; border-radius: 4px; background: rgba(255,255,255,0.05);"></div>
+                                <span class="muted">Occupied</span>
+                            </div>
+                        </div>
+
+                        <div id="slotsContainer"></div>
+                        <div id="parkingErrorMsg" class="error-msg"></div>
+                    </section>
+                </div>
+
+                <!-- TAB: QR -->
+                <div id="tab-qr" class="tab-pane hidden">
+                    <section class="card" id="currentSessionSection" style="text-align:center; max-width:500px; margin: 0 auto;">
+                        <h2 style="color: var(--accent-primary); margin-bottom: 24px;">My Parking QR</h2>
+                        
+                        <div style="background: rgba(255,255,255,0.03); padding: 24px; border-radius: var(--radius-lg); border: 1px solid var(--border);">
+                            <div id="qrCode" style="margin: 0 auto;"></div>
+                        </div>
+                        
+                        <div id="sessionDetails" style="text-align:left; margin-top:24px; background:var(--card-secondary); padding:20px; border-radius:var(--radius-md);"></div>
+                        
+                        <div style="display:flex; gap:12px; margin-top:24px;">
+                            <button id="downloadQrBtn" class="btn" style="flex:1;" onclick="downloadQR()">
+                                <i data-lucide="download" size="16"></i> Download
+                            </button>
+                            <button id="copyQrBtn" class="btn btn-secondary" style="flex:1;" onclick="copyQrLink()">
+                                <i data-lucide="copy" size="16"></i> Copy Link
+                            </button>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- TAB: HISTORY -->
+                <div id="tab-history" class="tab-pane hidden">
+                    <section class="card">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+                            <h2 style="margin:0;">Parking History</h2>
+                            <button class="btn btn-secondary" onclick="loadHistory()"><i data-lucide="refresh-cw" size="14"></i> Refresh</button>
+                        </div>
+                        <div class="table-wrap">
+                            <div id="historyTableContainer"></div>
+                        </div>
+                    </section>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- MODALS -->
+
+    <!-- Reserve Confirm Modal -->
+    <div id="reserveModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Confirm Reservation</h2>
+                <button class="modal-close" onclick="closeModal('reserveModal')"><i data-lucide="x" size="20"></i></button>
+            </div>
+            <div style="display:grid; gap:12px; margin-bottom:24px; font-size:13px;">
+                <div style="display:flex; justify-content:space-between;">
+                    <span class="muted">Parking Slot:</span>
+                    <strong style="color:var(--accent-primary); font-size:16px;" id="confirmSlotLabel">--</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between;">
+                    <span class="muted">Vehicle:</span>
+                    <strong id="confirmVehicleLabel">--</strong>
+                </div>
+            </div>
+            <p id="modal-reserve-error" class="error-msg"></p>
+            <div style="display:flex; gap:12px; justify-content:flex-end;">
+                <button class="btn btn-secondary" onclick="closeModal('reserveModal')">Cancel</button>
+                <button class="btn" id="confirmReserveBtn" onclick="createParkingSession()">Confirm Reservation</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Vehicle Modal -->
+    <div id="vehicleModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="vehicleModalTitle">Register Vehicle</h2>
+                <button class="modal-close" onclick="closeModal('vehicleModal')"><i data-lucide="x" size="20"></i></button>
+            </div>
+            <form id="vehicleForm" onsubmit="saveVehicle(event)">
+                <div class="form-group">
+                    <label>Vehicle Number</label>
+                    <input type="text" id="vehNumberInput" required placeholder="e.g. TN 01 AB 1234">
+                </div>
+                <div class="form-group">
+                    <label>Vehicle Type</label>
+                    <select id="vehTypeInput" required>
+                        <option value="bike">Bike</option>
+                        <option value="car">Car</option>
+                    </select>
+                </div>
+                <p id="modal-vehicle-error" class="error-msg"></p>
+                <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:24px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('vehicleModal')">Cancel</button>
+                    <button type="submit" class="btn" id="saveVehicleBtn">Save Vehicle</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Vehicle Modal -->
+    <div id="deleteVehicleModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Delete Vehicle?</h2>
+                <button class="modal-close" onclick="closeModal('deleteVehicleModal')"><i data-lucide="x" size="20"></i></button>
+            </div>
+            <p style="margin-bottom:24px; color:var(--text-secondary);">This vehicle will be permanently removed from your account. Are you sure?</p>
+            <p id="modal-delete-error" class="error-msg"></p>
+            <div style="display:flex; gap:12px; justify-content:flex-end;">
+                <button class="btn btn-secondary" onclick="closeModal('deleteVehicleModal')">Cancel</button>
+                <button class="btn btn-danger" id="confirmDeleteVehBtn" onclick="deleteVehicle()">Delete Vehicle</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

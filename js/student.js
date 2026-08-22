@@ -1,75 +1,274 @@
 // js/student.js
 let currentUserProfile = null;
 let selectedSlotId = null;
+let selectedSlotNumber = null;
+let currentReservation = null;
+let activeTab = 'tab-dashboard';
 
 document.addEventListener('DOMContentLoaded', async () => {
     currentUserProfile = await checkAuthAndRole('student');
     if (currentUserProfile) {
-        document.getElementById('welcomeMessage').textContent = `Welcome, ${currentUserProfile.name}`;
-        document.getElementById('vehicleDetails').innerHTML = `<p class="muted" style="margin:0;">Vehicle: <strong>${currentUserProfile.vehicle_number}</strong> (${currentUserProfile.vehicle_type.toUpperCase()})</p>`;
-
+        document.getElementById('welcomeMessage').textContent = `Good evening, ${currentUserProfile.name.split(' ')[0]}`;
         
-        checkCurrentSession();
-        loadHistory();
+        setupNavigation();
+        await refreshAllData();
     }
 });
 
-async function checkCurrentSession() {
-    const { data: sessions } = await supabase.from('parking_sessions').select('*, parking_slots(slot_number)').eq('user_id', currentUserProfile.id).in('status', ['pending', 'active']).order('created_at', { ascending: false }).limit(1);
+function setupNavigation() {
+    const navItems = document.querySelectorAll('.sidebar-nav .nav-item');
+    navItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetTab = item.getAttribute('data-tab');
+            if (targetTab) switchTab(targetTab);
+        });
+    });
+}
 
-    if (sessions && sessions.length > 0) {
-        displayCurrentSession(sessions[0]);
+function switchTab(tabId) {
+    if (tabId === activeTab) return;
+    
+    // Update active nav
+    document.querySelectorAll('.sidebar-nav .nav-item').forEach(el => {
+        if (el.getAttribute('data-tab') === tabId) {
+            el.classList.add('active');
+        } else {
+            el.classList.remove('active');
+        }
+    });
+
+    // Update active pane
+    document.querySelectorAll('.tab-pane').forEach(el => {
+        if (el.id === tabId) {
+            el.classList.remove('hidden');
+        } else {
+            el.classList.add('hidden');
+        }
+    });
+    
+    activeTab = tabId;
+}
+
+async function refreshAllData() {
+    await updateVehicleTab();
+    await checkCurrentSession();
+    await loadParkingSlots();
+    await loadHistory();
+    updateDashboardStats();
+}
+
+// -----------------------------------------------------
+// VEHICLE MANAGEMENT
+// -----------------------------------------------------
+async function updateVehicleTab() {
+    const vCard = document.getElementById('vehicleDetails');
+    const vNone = document.getElementById('noVehicleState');
+    const vEdit = document.getElementById('editVehicleBtn');
+    
+    if (currentUserProfile.vehicle_id) {
+        vCard.classList.remove('hidden');
+        vNone.classList.add('hidden');
+        vEdit.classList.remove('hidden');
+        
+        document.getElementById('vehNumberDisplay').textContent = currentUserProfile.vehicle_number;
+        document.getElementById('vehTypeDisplay').textContent = currentUserProfile.vehicle_type;
+        
+        document.getElementById('dashVehicle').textContent = currentUserProfile.vehicle_number;
+        document.getElementById('dashVehicleType').textContent = currentUserProfile.vehicle_type.toUpperCase();
     } else {
-        document.getElementById('bookSlotSection').classList.remove('hidden');
-        loadParkingSlots();
+        vCard.classList.add('hidden');
+        vNone.classList.remove('hidden');
+        vEdit.classList.add('hidden');
+        
+        document.getElementById('dashVehicle').textContent = 'No Vehicle';
+        document.getElementById('dashVehicleType').textContent = '--';
     }
 }
 
-function displayCurrentSession(session) {
-    document.getElementById('bookSlotSection').classList.add('hidden');
-    document.getElementById('currentSessionSection').classList.remove('hidden');
+async function saveVehicle(e) {
+    e.preventDefault();
+    const btn = document.getElementById('saveVehicleBtn');
+    const msg = document.getElementById('modal-vehicle-error');
+    msg.classList.remove('visible');
     
+    const vNum = document.getElementById('vehNumberInput').value.trim().toUpperCase();
+    const vType = document.getElementById('vehTypeInput').value;
+    
+    setLoading(btn, true, 'Saving...');
+    
+    try {
+        if (currentUserProfile.vehicle_id) {
+            // Update
+            const { error } = await supabase.from('vehicles').update({ vehicle_number: vNum, vehicle_type: vType }).eq('id', currentUserProfile.vehicle_id);
+            if (error) throw error;
+            showToast('Vehicle updated successfully', 'success');
+        } else {
+            // Insert
+            const { data, error } = await supabase.from('vehicles').insert([{ user_id: currentUserProfile.id, vehicle_number: vNum, vehicle_type: vType }]).select().single();
+            if (error) throw error;
+            currentUserProfile.vehicle_id = data.id;
+            showToast('Vehicle added successfully', 'success');
+        }
+        
+        currentUserProfile.vehicle_number = vNum;
+        currentUserProfile.vehicle_type = vType;
+        
+        closeModal('vehicleModal');
+        await refreshAllData();
+    } catch (err) {
+        msg.textContent = err.message || 'Error saving vehicle';
+        msg.classList.add('visible');
+    } finally {
+        setLoading(btn, false);
+    }
+}
+
+async function deleteVehicle() {
+    const btn = document.getElementById('confirmDeleteVehBtn');
+    const msg = document.getElementById('modal-delete-error');
+    msg.classList.remove('visible');
+    
+    if (!currentUserProfile.vehicle_id) return;
+    
+    setLoading(btn, true, 'Deleting...');
+    
+    try {
+        // Must ensure no active reservations
+        const { data: res } = await supabase.from('parking_reservations').select('id').eq('user_id', currentUserProfile.id).in('status', ['reserved', 'active']);
+        if (res && res.length > 0) throw new Error("Cannot delete vehicle with an active parking reservation.");
+
+        const { error } = await supabase.from('vehicles').delete().eq('id', currentUserProfile.vehicle_id);
+        if (error) throw error;
+        
+        currentUserProfile.vehicle_id = null;
+        currentUserProfile.vehicle_number = null;
+        currentUserProfile.vehicle_type = null;
+        
+        showToast('Vehicle deleted', 'success');
+        closeModal('deleteVehicleModal');
+        await refreshAllData();
+    } catch (err) {
+        msg.textContent = err.message || 'Error deleting vehicle';
+        msg.classList.add('visible');
+    } finally {
+        setLoading(btn, false);
+    }
+}
+
+
+// -----------------------------------------------------
+// RESERVATIONS & QR
+// -----------------------------------------------------
+async function checkCurrentSession() {
+    const { data: reservations } = await supabase
+        .from('parking_reservations')
+        .select('*, parking_slots(slot_number)')
+        .eq('user_id', currentUserProfile.id)
+        .in('status', ['reserved', 'active'])
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+    const navQr = document.getElementById('navQr');
+    
+    if (reservations && reservations.length > 0) {
+        currentReservation = reservations[0];
+        navQr.classList.remove('hidden');
+        displayCurrentSession(currentReservation);
+    } else {
+        currentReservation = null;
+        navQr.classList.add('hidden');
+        if (activeTab === 'tab-qr') switchTab('tab-dashboard');
+        
+        document.getElementById('dashStatus').textContent = 'No Pass';
+        document.getElementById('dashSlot').textContent = '--';
+        document.getElementById('dashStatus').style.color = 'var(--text-muted)';
+    }
+}
+
+function displayCurrentSession(reservation) {
     const qrContainer = document.getElementById('qrCode');
     qrContainer.innerHTML = '';
     
-    // Ensure QR code encodes exactly the token and is large enough
-    new QRCode(qrContainer, { text: session.qr_token, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.H, colorDark: "#12355b" });
+    const qrUrl = window.location.origin + "/security.html?token=" + reservation.access_token;
+    
+    new QRCode(qrContainer, { 
+        text: qrUrl, 
+        width: 200, 
+        height: 200, 
+        correctLevel: QRCode.CorrectLevel.H, 
+        colorDark: "#151918" 
+    });
+    
     qrContainer.style.display = 'flex';
     qrContainer.style.justifyContent = 'center';
-    qrContainer.style.padding = '15px';
+
+    let statusDisplay = reservation.status === 'reserved' ? 'RESERVED' : 'PARKED';
+    let statusColor = reservation.status === 'reserved' ? 'var(--warning)' : 'var(--accent-primary)';
 
     document.getElementById('sessionDetails').innerHTML = `
-        <p style="font-size: 1.25rem; font-weight: bold; text-align: center; margin-bottom: 25px; letter-spacing: 1px; word-break: break-all;">${session.qr_token}</p>
-        <h3 style="margin-bottom:12px; font-size:1.05rem;">Your parking details</h3>
-        <p style="margin-bottom:8px;">Name: <strong>${currentUserProfile.name}</strong></p>
-        <p style="margin-bottom:8px;">Vehicle: <strong>${currentUserProfile.vehicle_number}</strong></p>
-        <p style="margin-bottom:8px;">Type: <strong>${currentUserProfile.vehicle_type.charAt(0).toUpperCase() + currentUserProfile.vehicle_type.slice(1)}</strong></p>
-        <p style="margin-bottom:8px;">Status: <strong>${session.status === 'pending' ? 'Ready to scan' : session.status}</strong></p>
-        <p style="margin-top:25px; text-align:center; color:var(--muted); font-size:0.9rem;">At the entrance, a warden scans this code to verify your parking.</p>
+        <div style="display:flex; justify-content:space-between; margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:12px;">
+            <span class="muted">Status</span>
+            <strong style="color:${statusColor};">${statusDisplay}</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+            <span class="muted">Slot</span>
+            <strong style="color:var(--text-primary); font-size:16px;">${reservation.parking_slots.slot_number}</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+            <span class="muted">Vehicle</span>
+            <strong>${currentUserProfile.vehicle_number}</strong>
+        </div>
     `;
     
-    document.getElementById('downloadQrBtn').classList.remove('hidden');
-    document.getElementById('downloadQrBtn').onclick = () => {
-        const img = qrContainer.querySelector('img');
-        if(!img) return;
-        const a = document.createElement('a');
-        a.href = img.src;
-        a.download = `QR_${session.qr_token}.png`;
-        a.click();
-    };
+    // Update Dashboard Stats Card
+    document.getElementById('dashStatus').textContent = statusDisplay;
+    document.getElementById('dashStatus').style.color = statusColor;
+    document.getElementById('dashSlot').textContent = 'Slot ' + reservation.parking_slots.slot_number;
 }
 
+function downloadQR() {
+    if (!currentReservation) return;
+    const img = document.querySelector('#qrCode img');
+    if(!img) return;
+    const a = document.createElement('a');
+    a.href = img.src;
+    a.download = `CampusPark-${currentReservation.parking_slots.slot_number}-${currentUserProfile.vehicle_number}.png`;
+    a.click();
+    showToast('QR Code downloaded', 'success');
+}
+
+function copyQrLink() {
+    if (!currentReservation) return;
+    const qrUrl = window.location.origin + "/security.html?token=" + currentReservation.access_token;
+    navigator.clipboard.writeText(qrUrl).then(() => {
+        showToast('QR Link copied to clipboard', 'success');
+    });
+}
+
+// -----------------------------------------------------
+// PARKING SLOTS
+// -----------------------------------------------------
 async function loadParkingSlots() {
-    const { data: slots } = await supabase.from('parking_slots').select('*').eq('vehicle_type', currentUserProfile.vehicle_type).order('slot_number');
+    if (!currentUserProfile.vehicle_type) {
+        document.getElementById('slotsContainer').innerHTML = '<p class="muted">Please register a vehicle to view available parking slots.</p>';
+        return;
+    }
+
+    const { data: slots } = await supabase
+        .from('parking_slots')
+        .select('*')
+        .eq('vehicle_type', currentUserProfile.vehicle_type)
+        .order('slot_number');
+        
     const container = document.getElementById('slotsContainer');
     container.innerHTML = '';
 
     if (!slots || !slots.length) {
-        container.innerHTML = '<p class="muted">No slots available for your vehicle type.</p>';
+        container.innerHTML = '<p class="muted">No slots available.</p>';
         return;
     }
 
-    // Group by first letter (e.g. 'A', 'B') to create rows
     const grouped = {};
     slots.forEach(slot => {
         const match = slot.slot_number.match(/^[a-zA-Z]+/);
@@ -79,18 +278,14 @@ async function loadParkingSlots() {
     });
 
     for (const [rowName, rowSlots] of Object.entries(grouped)) {
-        // Add row header
         const rowHeader = document.createElement('h3');
-        rowHeader.textContent = `Row ${rowName}`;
+        rowHeader.textContent = `Zone ${rowName}`;
         rowHeader.style.width = '100%';
-        rowHeader.style.margin = '15px 0 5px 0';
-        rowHeader.style.fontSize = '1.1rem';
+        rowHeader.style.margin = '20px 0 10px 0';
         container.appendChild(rowHeader);
 
-        // Add grid for this row
         const rowDiv = document.createElement('div');
         rowDiv.className = 'slots';
-        rowDiv.style.margin = '0';
 
         rowSlots.forEach(slot => {
             const btn = document.createElement('button');
@@ -99,10 +294,16 @@ async function loadParkingSlots() {
             
             if (slot.status === 'available') {
                 btn.onclick = () => {
-                    document.querySelectorAll('.slot').forEach(el => el.classList.remove('selected'));
-                    btn.classList.add('selected');
+                    if (currentReservation) {
+                        showToast('You already have an active reservation.', 'warning');
+                        return;
+                    }
                     selectedSlotId = slot.id;
-                    document.getElementById('bookBtn').classList.remove('hidden');
+                    selectedSlotNumber = slot.slot_number;
+                    
+                    document.getElementById('confirmSlotLabel').textContent = slot.slot_number;
+                    document.getElementById('confirmVehicleLabel').textContent = currentUserProfile.vehicle_number;
+                    openModal('reserveModal');
                 };
             } else {
                 btn.disabled = true;
@@ -115,52 +316,100 @@ async function loadParkingSlots() {
 }
 
 async function createParkingSession() {
-    if (!selectedSlotId) return;
-    const msg = document.getElementById('booking-error');
-    msg.className = 'error-msg';
+    if (!selectedSlotId || !currentUserProfile.vehicle_id) return;
     
-    // Check for existing active/pending session
-    const { data: existing } = await supabase.from('parking_sessions').select('id').eq('user_id', currentUserProfile.id).in('status', ['pending', 'active']);
-    if (existing && existing.length > 0) {
-        msg.textContent = 'You already have an active parking pass.';
-        msg.classList.add('visible');
-        return;
-    }
+    const msg = document.getElementById('modal-reserve-error');
+    msg.classList.remove('visible');
     
-    const qrToken = 'PARK-' + crypto.randomUUID().toUpperCase();
-    const { error } = await supabase.from('parking_sessions').insert([{
-        user_id: currentUserProfile.id,
-        slot_id: selectedSlotId,
-        vehicle_number: currentUserProfile.vehicle_number,
-        qr_token: qrToken,
-        status: 'pending'
-    }]);
+    const btn = document.getElementById('confirmReserveBtn');
+    setLoading(btn, true, 'Reserving...');
+
+    const token = crypto.randomUUID();
+
+    const { error } = await supabase.rpc('reserve_parking_slot', {
+        p_vehicle_id: currentUserProfile.vehicle_id,
+        p_parking_slot_id: selectedSlotId,
+        p_access_token: token
+    });
+
+    setLoading(btn, false);
 
     if (error) {
-        msg.textContent = 'Error booking slot. It might have been taken.';
+        msg.textContent = error.message || 'Error booking slot. It might have been taken.';
         msg.classList.add('visible');
+        await loadParkingSlots();
     } else {
-        window.location.reload();
+        closeModal('reserveModal');
+        showToast(`Slot ${selectedSlotNumber} reserved!`, 'success');
+        await refreshAllData();
+        switchTab('tab-qr'); // Send them directly to their QR
     }
 }
 
+// -----------------------------------------------------
+// HISTORY & DASHBOARD STATS
+// -----------------------------------------------------
 async function loadHistory() {
-    const { data: sessions } = await supabase.from('parking_sessions').select('*, parking_slots(slot_number)').eq('user_id', currentUserProfile.id).in('status', ['completed', 'cancelled']).order('created_at', { ascending: false });
-    const container = document.getElementById('historyContainer');
-    if (!sessions || !sessions.length) {
-        container.innerHTML = '<p class="muted">No previous parking history.</p>';
+    const { data: reservations } = await supabase
+        .from('parking_reservations')
+        .select('*, parking_slots(slot_number), access_logs(check_in_time, check_out_time)')
+        .eq('user_id', currentUserProfile.id)
+        .in('status', ['completed', 'cancelled', 'expired'])
+        .order('created_at', { ascending: false })
+        .limit(10);
+        
+    const fullContainer = document.getElementById('historyTableContainer');
+    const dashContainer = document.getElementById('recentTimeline');
+    
+    if (!reservations || !reservations.length) {
+        fullContainer.innerHTML = '<p class="muted">Your completed parking sessions will appear here.</p>';
+        dashContainer.innerHTML = '<p class="muted">No recent activity.</p>';
         return;
     }
 
-    let html = '';
-    sessions.forEach(s => {
-        html += `<div style="padding:12px 0; border-bottom: 1px solid var(--line);">
-            <strong>${s.parking_slots.slot_number}</strong> &nbsp; <span class="badge badge-${s.status}">${s.status}</span>
-            <div style="font-size:0.85rem; color:var(--muted); margin-top:4px;">
-                Entry: ${s.entry_time ? new Date(s.entry_time).toLocaleString() : 'N/A'} <br>
-                Exit: ${s.exit_time ? new Date(s.exit_time).toLocaleString() : 'N/A'}
-            </div>
-        </div>`;
+    let fullHtml = '<table><tr><th>Date</th><th>Slot</th><th>In</th><th>Out</th><th>Status</th></tr>';
+    let dashHtml = '';
+
+    reservations.forEach((r, index) => {
+        let entryTime = '--';
+        let exitTime = '--';
+        
+        if (r.access_logs && r.access_logs.length > 0) {
+            const log = r.access_logs[0];
+            entryTime = log.check_in_time ? new Date(log.check_in_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--';
+            exitTime = log.check_out_time ? new Date(log.check_out_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--';
+        }
+
+        const dateStr = new Date(r.created_at).toLocaleDateString();
+
+        // Full History Table
+        fullHtml += `<tr>
+            <td class="muted">${dateStr}</td>
+            <td><strong>${r.parking_slots.slot_number}</strong></td>
+            <td>${entryTime}</td>
+            <td>${exitTime}</td>
+            <td><span class="badge badge-${r.status}">${r.status}</span></td>
+        </tr>`;
+
+        // Dashboard Timeline (Only top 3)
+        if (index < 3) {
+            dashHtml += `
+            <div class="timeline-item">
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                    <strong style="color:var(--text-primary); font-size:13px;">Parked in ${r.parking_slots.slot_number}</strong>
+                    <span class="muted" style="font-size:11px;">${dateStr}</span>
+                </div>
+                <div style="font-size:12px; color:var(--text-muted);">In: ${entryTime} | Out: ${exitTime}</div>
+            </div>`;
+        }
     });
-    container.innerHTML = html;
+    
+    fullHtml += '</table>';
+    fullContainer.innerHTML = fullHtml;
+    dashContainer.innerHTML = dashHtml;
+}
+
+function updateDashboardStats() {
+    // Basic stats updating handled within other functions (checkCurrentSession, updateVehicleTab).
+    // If we want total visits, we could calculate it from history.
 }
