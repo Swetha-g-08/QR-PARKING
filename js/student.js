@@ -32,9 +32,11 @@ function switchTab(tabId) {
     // Update active nav
     document.querySelectorAll('.sidebar-nav .nav-item').forEach(el => {
         if (el.getAttribute('data-tab') === tabId) {
-            el.classList.add('active');
+            el.classList.add('bg-white', 'text-blue-600', 'shadow-sm');
+            el.classList.remove('text-slate-600', 'hover:bg-white/50', 'active');
         } else {
-            el.classList.remove('active');
+            el.classList.remove('bg-white', 'text-blue-600', 'shadow-sm', 'active');
+            el.classList.add('text-slate-600', 'hover:bg-white/50');
         }
     });
 

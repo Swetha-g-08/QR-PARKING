@@ -3,89 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register | CampusPark</title>
-    <link rel="stylesheet" href="css/style.css">
+    <title>Register | Apex Park</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              slate: { 50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 300: '#cbd5e1', 400: '#94a3b8', 500: '#64748b', 600: '#475569', 700: '#334155', 800: '#1e293b', 900: '#0f172a' },
+              blue: { 50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd', 400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 800: '#1e40af', 900: '#1e3a8a' },
+              emerald: { 50: '#ecfdf5', 100: '#d1fae5', 200: '#a7f3d0', 300: '#6ee7b7', 400: '#34d399', 500: '#10b981', 600: '#059669', 700: '#047857', 800: '#065f46', 900: '#064e3b' }
+            }
+          }
+        }
+      }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="js/config.js" defer></script>
     <script src="js/supabase.js" defer></script>
     <script src="js/auth.js" defer></script>
 </head>
-<body style="display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 40px 20px;">
-    <div class="auth-card" style="max-width: 500px;">
-        <div style="text-align: center; margin-bottom: 32px;">
-            <div style="display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; background: rgba(185, 255, 241, 0.1); color: var(--accent-primary); border-radius: var(--radius-md); margin-bottom: 16px;">
-                <i data-lucide="user-plus" size="24"></i>
+<body class="min-h-screen bg-slate-50 text-slate-900 flex items-center justify-center p-4 font-sans selection:bg-blue-600 selection:text-white">
+    
+    <div class="max-w-md w-full">
+        <!-- Logo Header -->
+        <div class="text-center mb-8">
+            <div class="w-16 h-16 rounded-3xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 mx-auto shadow-sm mb-6">
+                <i data-lucide="qr-code" class="w-8 h-8"></i>
             </div>
-            <h1 style="margin: 0; font-size: 24px;">Create your CampusPark account</h1>
-            <p class="muted" style="margin-top: 8px; font-size: 13px;">Start using smart campus parking.</p>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
+                Join Apex Park
+            </h1>
+            <p class="text-sm text-slate-500">
+                Register to access smart campus parking.
+            </p>
         </div>
         
-        <form id="register-form">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                <div class="form-group" style="grid-column: 1 / -1;">
-                    <label for="name">Full Name</label>
-                    <div style="position: relative;">
-                        <i data-lucide="user" size="16" style="position: absolute; left: 12px; top: 14px; color: var(--text-muted);"></i>
-                        <input type="text" id="name" required style="padding-left: 40px;" placeholder="Alex Kumar">
+        <!-- Register Form Card -->
+        <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/50">
+            <form id="register-form" class="space-y-5">
+                
+                <div>
+                    <label for="name" class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">Full Name</label>
+                    <div class="relative">
+                        <i data-lucide="user" class="w-4 h-4 absolute left-4 top-3.5 text-slate-400"></i>
+                        <input type="text" id="name" required class="w-full pl-11 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-slate-900 text-sm transition placeholder-slate-400" placeholder="e.g. Alex Kumar">
                     </div>
                 </div>
                 
-                <div class="form-group" style="grid-column: 1 / -1;">
-                    <label for="student_id">Student ID</label>
-                    <div style="position: relative;">
-                        <i data-lucide="hash" size="16" style="position: absolute; left: 12px; top: 14px; color: var(--text-muted);"></i>
-                        <input type="text" id="student_id" required style="padding-left: 40px;" placeholder="23CS001">
+                <div>
+                    <label for="student_id" class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">Student ID</label>
+                    <div class="relative">
+                        <i data-lucide="hash" class="w-4 h-4 absolute left-4 top-3.5 text-slate-400"></i>
+                        <input type="text" id="student_id" required class="w-full pl-11 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-slate-900 text-sm transition placeholder-slate-400" placeholder="e.g. 23CS001">
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <div style="position: relative;">
-                        <i data-lucide="lock" size="16" style="position: absolute; left: 12px; top: 14px; color: var(--text-muted);"></i>
-                        <input type="password" id="password" required style="padding-left: 40px;" placeholder="********">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="password" class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">Password</label>
+                        <div class="relative">
+                            <i data-lucide="lock" class="w-4 h-4 absolute left-3 top-3.5 text-slate-400"></i>
+                            <input type="password" id="password" required class="w-full pl-9 pr-3 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-slate-900 text-sm transition placeholder-slate-400" placeholder="********">
+                        </div>
                     </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="confirm_password">Confirm Password</label>
-                    <div style="position: relative;">
-                        <i data-lucide="lock" size="16" style="position: absolute; left: 12px; top: 14px; color: var(--text-muted);"></i>
-                        <input type="password" id="confirm_password" required style="padding-left: 40px;" placeholder="********">
+                    <div>
+                        <label for="confirm_password" class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">Confirm</label>
+                        <div class="relative">
+                            <i data-lucide="lock" class="w-4 h-4 absolute left-3 top-3.5 text-slate-400"></i>
+                            <input type="password" id="confirm_password" required class="w-full pl-9 pr-3 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-slate-900 text-sm transition placeholder-slate-400" placeholder="********">
+                        </div>
                     </div>
                 </div>
                 
-                <div class="form-group">
-                    <label for="vehicle_type">Vehicle Type</label>
-                    <div style="position: relative;">
-                        <i data-lucide="car" size="16" style="position: absolute; left: 12px; top: 14px; color: var(--text-muted);"></i>
-                        <select id="vehicle_type" required style="padding-left: 40px; appearance: none;">
-                            <option value="bike">Bike</option>
-                            <option value="car">Car</option>
-                        </select>
-                        <i data-lucide="chevron-down" size="16" style="position: absolute; right: 12px; top: 14px; color: var(--text-muted); pointer-events: none;"></i>
+                <div class="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+                    <div>
+                        <label for="vehicle_type" class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">Vehicle Type</label>
+                        <div class="relative">
+                            <i data-lucide="car" class="w-4 h-4 absolute left-3 top-3.5 text-slate-400"></i>
+                            <select id="vehicle_type" required class="w-full pl-9 pr-8 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-slate-900 text-sm transition appearance-none">
+                                <option value="bike">Bike</option>
+                                <option value="car">Car</option>
+                            </select>
+                            <i data-lucide="chevron-down" class="w-4 h-4 absolute right-3 top-3.5 text-slate-400 pointer-events-none"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="vehicle_number" class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">Number Plate</label>
+                        <div class="relative">
+                            <i data-lucide="hash" class="w-4 h-4 absolute left-3 top-3.5 text-slate-400"></i>
+                            <input type="text" id="vehicle_number" required class="w-full pl-9 pr-3 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-slate-900 text-sm uppercase transition placeholder-slate-400" placeholder="TN 01 AB 1234">
+                        </div>
                     </div>
                 </div>
-
-                <div class="form-group">
-                    <label for="vehicle_number">Vehicle Number</label>
-                    <div style="position: relative;">
-                        <i data-lucide="hash" size="16" style="position: absolute; left: 12px; top: 14px; color: var(--text-muted);"></i>
-                        <input type="text" id="vehicle_number" required style="padding-left: 40px;" placeholder="TN 01 AB 1234">
-                    </div>
+                
+                <div id="register-error" class="text-rose-500 text-sm text-center hidden pt-2 font-medium"></div>
+                
+                <div class="pt-4">
+                    <button type="submit" class="w-full flex items-center justify-center space-x-2 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md transition group">
+                        <span>Create Account</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
+                    </button>
                 </div>
-            </div>
-            
-            <div id="register-error" class="error-msg text-center" style="margin-top: 16px;"></div>
-            
-            <button type="submit" class="btn" style="width: 100%; margin-top: 24px; padding: 12px;">
-                CREATE ACCOUNT <i data-lucide="arrow-right" size="16"></i>
-            </button>
-        </form>
-        
+            </form>
+        </div>
 
-
+        <div class="text-center mt-8">
+            <p class="text-xs text-slate-500">
+                Automated QR Parking Management System © 2026<br>
+                <span class="font-medium">Apex Institute of Technology & Science</span>
+            </p>
+        </div>
     </div>
+
     <script>
         lucide.createIcons();
     </script>

@@ -137,7 +137,8 @@ function showToast(message, type = 'info') {
 function openModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
-        modal.classList.add('active');
+        modal.classList.remove('opacity-0', 'pointer-events-none');
+        modal.classList.add('opacity-100', 'pointer-events-auto');
         document.body.style.overflow = 'hidden';
     }
 }
@@ -145,7 +146,8 @@ function openModal(modalId) {
 function closeModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
-        modal.classList.remove('active');
+        modal.classList.add('opacity-0', 'pointer-events-none');
+        modal.classList.remove('opacity-100', 'pointer-events-auto');
         document.body.style.overflow = '';
     }
 }
@@ -158,7 +160,7 @@ document.addEventListener('click', (e) => {
 });
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-        document.querySelectorAll('.modal-overlay.active').forEach(modal => {
+        document.querySelectorAll('.modal-overlay.opacity-100').forEach(modal => {
             closeModal(modal.id);
         });
     }
@@ -184,10 +186,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!document.getElementById('profileDropdown')) {
             const dropdown = document.createElement('div');
             dropdown.id = 'profileDropdown';
-            dropdown.className = 'dropdown-menu';
+            dropdown.className = 'absolute right-0 top-full mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-lg shadow-slate-200/50 py-2 opacity-0 pointer-events-none transition-all duration-200 origin-top-right scale-95 z-50';
             dropdown.innerHTML = `
-                <a href="register.html" class="dropdown-item" style="text-decoration: none;">
-                    <i data-lucide="home" size="16"></i> Home
+                <a href="register.html" class="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition w-full text-left" style="text-decoration: none;">
+                    <i data-lucide="home" class="w-4 h-4 mr-2"></i> Home
                 </a>
             `;
             profileBtn.style.position = 'relative';
@@ -196,12 +198,25 @@ document.addEventListener('DOMContentLoaded', () => {
         
         profileBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            document.getElementById('profileDropdown').classList.toggle('active');
+            const dropdown = document.getElementById('profileDropdown');
+            const isActive = !dropdown.classList.contains('opacity-0');
+            
+            if (isActive) {
+                dropdown.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
+                dropdown.classList.remove('opacity-100', 'pointer-events-auto', 'scale-100');
+            } else {
+                dropdown.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
+                dropdown.classList.add('opacity-100', 'pointer-events-auto', 'scale-100');
+            }
         });
     }
     
     // Close dropdowns when clicking outside
     document.addEventListener('click', () => {
-        document.querySelectorAll('.dropdown-menu.active').forEach(d => d.classList.remove('active'));
+        const dropdown = document.getElementById('profileDropdown');
+        if (dropdown && !dropdown.classList.contains('opacity-0')) {
+            dropdown.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
+            dropdown.classList.remove('opacity-100', 'pointer-events-auto', 'scale-100');
+        }
     });
 });

@@ -3,7 +3,21 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Student Dashboard | ParkEase</title>
+    <title>Student Dashboard | Apex Park</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              slate: { 50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 300: '#cbd5e1', 400: '#94a3b8', 500: '#64748b', 600: '#475569', 700: '#334155', 800: '#1e293b', 900: '#0f172a' },
+              blue: { 50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd', 400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 800: '#1e40af', 900: '#1e3a8a' },
+              emerald: { 50: '#ecfdf5', 100: '#d1fae5', 200: '#a7f3d0', 300: '#6ee7b7', 400: '#34d399', 500: '#10b981', 600: '#059669', 700: '#047857', 800: '#065f46', 900: '#064e3b' }
+            }
+          }
+        }
+      }
+    </script>
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -13,299 +27,362 @@
     <script defer src="js/auth.js"></script>
     <script defer src="js/student.js"></script>
 </head>
-<body>
-    <div class="dashboard-wrapper">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-logo">
-                <i data-lucide="parking-circle"></i>
+<body class="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
+    
+    <!-- Top Navbar -->
+    <header id="app-header" class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 text-slate-800 shadow-sm">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16 sm:h-18">
+          
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-md shadow-blue-500/20 text-white font-bold">
+              <i data-lucide="qr-code"></i>
             </div>
-            <nav class="sidebar-nav">
-                <a href="#dashboard" class="nav-item active" data-tab="tab-dashboard" data-tooltip="Dashboard">
-                    <i data-lucide="layout-dashboard"></i>
-                </a>
-                <a href="#vehicle" class="nav-item" data-tab="tab-vehicle" data-tooltip="Vehicle">
-                    <i data-lucide="car"></i>
-                </a>
-                <a href="#parking" class="nav-item" data-tab="tab-parking" data-tooltip="Parking">
-                    <i data-lucide="map"></i>
-                </a>
-                <a href="#qr" class="nav-item hidden" id="navQr" data-tab="tab-qr" data-tooltip="My QR">
-                    <i data-lucide="qr-code"></i>
-                </a>
-                <a href="#history" class="nav-item" data-tab="tab-history" data-tooltip="History">
-                    <i data-lucide="history"></i>
-                </a>
-            </nav>
-            <div class="sidebar-bottom">
-                <a href="#settings" class="nav-item" data-tab="tab-settings" data-tooltip="Settings">
-                    <i data-lucide="settings"></i>
-                </a>
-                <a href="register.html" class="nav-item" data-tooltip="Back to Home">
-                    <i data-lucide="home"></i>
-                </a>
+            <div>
+              <div class="flex items-center space-x-2">
+                <span class="font-extrabold text-base sm:text-lg tracking-tight text-slate-900">
+                  APEX <span class="text-blue-600 font-semibold">PARK</span>
+                </span>
+                <span class="hidden md:inline-block px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded bg-blue-50 text-blue-700 border border-blue-200">
+                  Smart QR Campus
+                </span>
+              </div>
+              <p class="hidden sm:block text-[11px] text-slate-500 font-medium">
+                Apex Institute of Technology & Science
+              </p>
             </div>
-        </aside>
+          </div>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- Header -->
-            <header class="top-header">
-                <div class="header-left">
-                    <div class="page-title" id="welcomeMessage">Loading...</div>
-                    <div class="page-subtitle">Here's your parking overview.</div>
+          <div class="flex items-center space-x-2">
+              <div class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 shadow-sm">
+                <i data-lucide="graduation-cap" class="w-3.5 h-3.5 mr-1.5 text-blue-600"></i>
+                <span class="hidden sm:inline">Student Portal</span>
+                <span class="sm:hidden">Student</span>
+              </div>
+          </div>
+
+          <div class="flex items-center space-x-2 sm:space-x-3">
+            <button class="p-2 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition" onclick="showToast('No new notifications')" title="Notifications">
+              <i data-lucide="bell" class="w-5 h-5"></i>
+            </button>
+            <div class="user-profile relative flex items-center space-x-2 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200/80 border border-slate-200 text-xs text-slate-700 transition cursor-pointer">
+                <div class="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center"><i data-lucide="user" class="w-4 h-4"></i></div>
+                <i data-lucide="chevron-down" class="w-3 h-3 text-slate-500"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+      
+      <!-- Student Top Profile Banner -->
+      <div class="p-5 rounded-3xl bg-white border border-slate-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm">
+        <div class="flex items-center space-x-4">
+          <div class="relative">
+            <div class="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center ring-2 ring-blue-500/40 text-slate-400">
+                <i data-lucide="user" class="w-6 h-6"></i>
+            </div>
+            <span class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-white"></span>
+          </div>
+
+          <div>
+            <div class="flex items-center space-x-2">
+              <h1 class="text-lg sm:text-xl font-bold text-slate-900 tracking-tight" id="welcomeMessage">Loading...</h1>
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                STUDENT PASS
+              </span>
+            </div>
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 mt-1">
+              <span>Department of Engineering</span>
+              <span>•</span>
+              <div class="flex items-center space-x-1 font-mono text-slate-700">
+                <i data-lucide="car" class="w-3.5 h-3.5 text-blue-500"></i>
+                <span class="font-semibold" id="dashVehicle">--</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Student Navigation Tabs -->
+      <div class="sidebar-nav flex items-center space-x-1 p-1 bg-slate-200/60 border border-slate-200 rounded-2xl overflow-x-auto">
+        <button class="nav-item bg-white text-blue-600 shadow-sm flex-1 min-w-[120px] flex items-center justify-center space-x-2 py-2.5 rounded-xl text-xs font-bold transition" data-tab="tab-dashboard">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+          <span>Dashboard</span>
+        </button>
+        <button class="nav-item text-slate-600 hover:text-slate-900 hover:bg-white/50 flex-1 min-w-[120px] flex items-center justify-center space-x-2 py-2.5 rounded-xl text-xs font-bold transition" data-tab="tab-parking">
+          <i data-lucide="map-pin" class="w-4 h-4"></i>
+          <span>Book Slot</span>
+        </button>
+        <button class="nav-item hidden text-slate-600 hover:text-slate-900 hover:bg-white/50 flex-1 min-w-[120px] flex items-center justify-center space-x-2 py-2.5 rounded-xl text-xs font-bold transition" data-tab="tab-qr" id="navQr">
+          <i data-lucide="qr-code" class="w-4 h-4"></i>
+          <span>Digital Pass</span>
+        </button>
+        <button class="nav-item text-slate-600 hover:text-slate-900 hover:bg-white/50 flex-1 min-w-[120px] flex items-center justify-center space-x-2 py-2.5 rounded-xl text-xs font-bold transition" data-tab="tab-vehicle">
+          <i data-lucide="car" class="w-4 h-4"></i>
+          <span>Vehicles</span>
+        </button>
+        <button class="nav-item text-slate-600 hover:text-slate-900 hover:bg-white/50 flex-1 min-w-[120px] flex items-center justify-center space-x-2 py-2.5 rounded-xl text-xs font-bold transition" data-tab="tab-history">
+          <i data-lucide="history" class="w-4 h-4"></i>
+          <span>History</span>
+        </button>
+        <button class="nav-item text-slate-600 hover:text-slate-900 hover:bg-white/50 flex-1 min-w-[120px] flex items-center justify-center space-x-2 py-2.5 rounded-xl text-xs font-bold transition" data-tab="tab-settings">
+          <i data-lucide="settings" class="w-4 h-4"></i>
+          <span>Settings</span>
+        </button>
+      </div>
+
+      <!-- TAB: DASHBOARD -->
+      <div id="tab-dashboard" class="tab-pane space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="p-5 rounded-2xl bg-blue-50 border border-blue-200 shadow-sm flex flex-col justify-center">
+                <div class="flex items-center space-x-2 mb-2">
+                    <i data-lucide="activity" class="w-5 h-5 text-blue-600"></i>
+                    <h3 class="text-sm font-bold text-blue-800 uppercase">Parking Status</h3>
                 </div>
-                <div class="header-right">
-                    <button class="header-icon" onclick="showToast('Search coming soon')"><i data-lucide="search" size="18"></i></button>
-                    <button class="header-icon" onclick="showToast('No new notifications')"><i data-lucide="bell" size="18"></i></button>
-                    <div class="user-profile">
-                        <div class="avatar"><i data-lucide="user" size="16"></i></div>
-                        <i data-lucide="chevron-down" size="16" class="muted"></i>
+                <div class="text-2xl font-bold text-slate-900" id="dashStatus">Loading...</div>
+                <div class="text-sm text-slate-500 mt-1" id="dashSlot">--</div>
+            </div>
+            
+            <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col justify-center">
+                <div class="flex items-center space-x-2 mb-2">
+                    <i data-lucide="car" class="w-5 h-5 text-emerald-600"></i>
+                    <h3 class="text-sm font-bold text-slate-600 uppercase">Active Vehicle</h3>
+                </div>
+                <div class="text-2xl font-bold font-mono text-slate-900 uppercase" id="dashVehicleType">--</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="md:col-span-2 p-6 rounded-3xl bg-white border border-slate-200 shadow-sm">
+                <h2 class="text-lg font-bold text-slate-900 mb-4">Recent Activity</h2>
+                <div id="historyContainerDash">
+                    <div class="space-y-4" id="recentTimeline">
+                        <!-- Populated via JS -->
                     </div>
                 </div>
-            </header>
-
-            <!-- Dashboard Content -->
-            <div class="dashboard-container">
-                
-                <!-- TAB: DASHBOARD -->
-                <div id="tab-dashboard" class="tab-pane">
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-title"><i data-lucide="activity" size="14"></i> Status</div>
-                            <div class="stat-value" id="dashStatus">Loading...</div>
-                            <div class="stat-desc" id="dashSlot">--</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-title"><i data-lucide="car" size="14"></i> Vehicle</div>
-                            <div class="stat-value" id="dashVehicle">--</div>
-                            <div class="stat-desc" id="dashVehicleType">--</div>
-                        </div>
-                    </div>
-
-                    <div class="dashboard-grid">
-                        <div class="grid-left">
-                            <section class="card">
-                                <h2>Recent Activity</h2>
-                                <div id="historyContainerDash">
-                                    <div class="timeline" id="recentTimeline">
-                                        <!-- Populated via JS -->
-                                    </div>
-                                </div>
-                                <button class="btn btn-secondary" style="width:100%; margin-top:16px;" onclick="document.querySelector('[data-tab=\'tab-history\']').click()">View Full History</button>
-                            </section>
-                        </div>
-                        <div class="grid-right">
-                            <section class="card">
-                                <h2>Quick Actions</h2>
-                                <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
-                                    <a href="#parking" onclick="document.querySelector('[data-tab=\'tab-parking\']').click()" class="card card-secondary" style="margin: 0; padding: 16px; display: flex; align-items: center; gap: 16px; text-decoration: none;">
-                                        <div style="background: rgba(185, 255, 241, 0.1); color: var(--accent-primary); padding: 10px; border-radius: var(--radius-md);">
-                                            <i data-lucide="map-pin" size="20"></i>
-                                        </div>
-                                        <div>
-                                            <div style="color: var(--text-primary); font-weight: 500; font-size: 13px;">Find Parking</div>
-                                            <div style="color: var(--text-muted); font-size: 11px;">View available slots</div>
-                                        </div>
-                                    </a>
-                                </div>
-                            </section>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- TAB: VEHICLE -->
-                <div id="tab-vehicle" class="tab-pane hidden">
-                    <section class="card" id="vehicleCard">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
-                            <h2 style="margin:0;">My Vehicle</h2>
-                            <button class="btn hidden" id="editVehicleBtn" onclick="openModal('vehicleModal')"><i data-lucide="edit-2" size="14"></i> Edit</button>
-                        </div>
-                        
-                        <div id="vehicleDetails" class="hidden" style="background:var(--card-secondary); padding:20px; border-radius:var(--radius-md); display:flex; justify-content:space-between; align-items:center;">
-                            <div>
-                                <div style="font-size:24px; font-weight:700; font-family:monospace; letter-spacing:2px; color:var(--accent-primary);" id="vehNumberDisplay">--</div>
-                                <div style="color:var(--text-muted); text-transform:uppercase; font-size:12px; margin-top:4px;" id="vehTypeDisplay">--</div>
-                            </div>
-                            <button class="btn btn-danger" onclick="openModal('deleteVehicleModal')"><i data-lucide="trash-2" size="16"></i> Delete</button>
-                        </div>
-
-                        <div id="noVehicleState" class="hidden" style="text-align:center; padding: 40px 20px;">
-                            <div style="background:var(--card-secondary); width:64px; height:64px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; color:var(--text-muted);">
-                                <i data-lucide="car" size="32"></i>
-                            </div>
-                            <h3 style="color:var(--text-primary); margin-bottom:8px;">No Vehicle Registered</h3>
-                            <p class="muted" style="margin-bottom:24px;">Register your vehicle to use the parking system.</p>
-                            <button class="btn" onclick="openModal('vehicleModal')">Register Vehicle</button>
-                        </div>
-                    </section>
-                </div>
-
-                <!-- TAB: PARKING -->
-                <div id="tab-parking" class="tab-pane hidden">
-                    <section class="card" id="bookSlotSection">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
-                            <div>
-                                <h2 style="margin:0;">Find Parking</h2>
-                                <p class="muted">Choose an available slot for your vehicle.</p>
-                            </div>
-                            <button class="btn btn-secondary" onclick="loadParkingSlots()"><i data-lucide="refresh-cw" size="14"></i> Refresh</button>
-                        </div>
-                        
-                        <div style="display: flex; gap: 16px; margin-bottom: 24px; font-size: 12px;">
-                            <div style="display: flex; align-items: center; gap: 6px;">
-                                <div style="width: 12px; height: 12px; border-radius: 4px; border: 1px solid rgba(185, 255, 241, 0.2);"></div>
-                                <span class="muted">Available</span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 6px;">
-                                <div style="width: 12px; height: 12px; border-radius: 4px; background: rgba(255,255,255,0.05);"></div>
-                                <span class="muted">Occupied</span>
-                            </div>
-                        </div>
-
-                        <div id="slotsContainer"></div>
-                        <div id="parkingErrorMsg" class="error-msg"></div>
-                    </section>
-                </div>
-
-                <!-- TAB: QR -->
-                <div id="tab-qr" class="tab-pane hidden">
-                    <section class="card" id="currentSessionSection" style="text-align:center; max-width:500px; margin: 0 auto;">
-                        <h2 style="color: var(--accent-primary); margin-bottom: 24px;">My Parking QR</h2>
-                        
-                        <div style="background: rgba(255,255,255,0.03); padding: 24px; border-radius: var(--radius-lg); border: 1px solid var(--border);">
-                            <div id="qrCode" style="margin: 0 auto;"></div>
-                        </div>
-                        
-                        <div id="sessionDetails" style="text-align:left; margin-top:24px; background:var(--card-secondary); padding:20px; border-radius:var(--radius-md);"></div>
-                        
-                        <div style="display:flex; gap:12px; margin-top:24px;">
-                            <button id="downloadQrBtn" class="btn" style="flex:1;" onclick="downloadQR()">
-                                <i data-lucide="download" size="16"></i> Download
-                            </button>
-                            <button id="copyQrBtn" class="btn btn-secondary" style="flex:1;" onclick="copyQrLink()">
-                                <i data-lucide="copy" size="16"></i> Copy Link
-                            </button>
-                        </div>
-                    </section>
-                </div>
-
-                <!-- TAB: HISTORY -->
-                <div id="tab-history" class="tab-pane hidden">
-                    <section class="card">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
-                            <h2 style="margin:0;">Parking History</h2>
-                            <button class="btn btn-secondary" onclick="loadHistory()"><i data-lucide="refresh-cw" size="14"></i> Refresh</button>
-                        </div>
-                        <div class="table-wrap">
-                            <div id="historyTableContainer"></div>
-                        </div>
-                    </section>
-                </div>
-
-                <!-- TAB: SETTINGS -->
-                <div id="tab-settings" class="tab-pane hidden">
-                    <section class="card">
-                        <h2 style="margin-top:0; margin-bottom:24px;">Settings</h2>
-                        <form id="settingsForm" onsubmit="saveSettings(event)">
-                            <div class="form-group">
-                                <label>Full Name</label>
-                                <input type="text" id="set_name" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Student ID</label>
-                                <input type="text" id="set_student_id" required disabled style="opacity:0.7; cursor:not-allowed;">
-                            </div>
-                            <div class="form-group">
-                                <label>Vehicle Number</label>
-                                <input type="text" id="set_vehicle_number" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Vehicle Type</label>
-                                <select id="set_vehicle_type" required>
-                                    <option value="bike">Bike</option>
-                                    <option value="car">Car</option>
-                                </select>
-                            </div>
-                            <p id="settings-error" class="error-msg"></p>
-                            <div style="margin-top:24px;">
-                                <button type="submit" class="btn" id="saveSettingsBtn">Save Changes</button>
-                            </div>
-                        </form>
-                    </section>
-                </div>
-
+                <button class="mt-4 px-4 py-2 w-full rounded-xl bg-slate-50 hover:bg-slate-100 text-sm font-semibold text-slate-700 border border-slate-200 transition" onclick="document.querySelector('[data-tab=\'tab-history\']').click()">
+                    View Full History
+                </button>
             </div>
-        </main>
-    </div>
+            <div class="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm">
+                <h2 class="text-lg font-bold text-slate-900 mb-4">Quick Actions</h2>
+                <button onclick="document.querySelector('[data-tab=\'tab-parking\']').click()" class="w-full flex items-center space-x-3 p-4 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 transition text-left group">
+                    <div class="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center group-hover:scale-105 transition">
+                        <i data-lucide="map-pin" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-sm text-slate-900">Find Parking</div>
+                        <div class="text-xs text-slate-500">View available slots</div>
+                    </div>
+                </button>
+            </div>
+        </div>
+      </div>
+
+      <!-- TAB: PARKING -->
+      <div id="tab-parking" class="tab-pane hidden space-y-6">
+        <div class="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm" id="bookSlotSection">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">Book a Slot</h2>
+                    <p class="text-sm text-slate-500">Choose an available slot for your vehicle.</p>
+                </div>
+                <button class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700 border border-slate-200 transition flex items-center" onclick="loadParkingSlots()">
+                    <i data-lucide="refresh-cw" class="w-3 h-3 mr-1"></i> Refresh
+                </button>
+            </div>
+            <div class="flex space-x-4 mb-6 text-xs text-slate-600">
+                <div class="flex items-center space-x-1"><div class="w-3 h-3 rounded-sm border border-slate-300"></div><span>Available</span></div>
+                <div class="flex items-center space-x-1"><div class="w-3 h-3 rounded-sm bg-slate-100 border border-slate-200 opacity-60"></div><span>Occupied</span></div>
+            </div>
+            <div id="slotsContainer" class="space-y-6"></div>
+            <div id="parkingErrorMsg" class="error-msg mt-4 text-rose-500 text-sm hidden"></div>
+        </div>
+      </div>
+
+      <!-- TAB: QR -->
+      <div id="tab-qr" class="tab-pane hidden">
+        <div class="max-w-md mx-auto p-8 rounded-3xl bg-white border border-slate-200 shadow-sm text-center" id="currentSessionSection">
+            <h2 class="text-xl font-bold text-blue-600 mb-6">Digital Parking Pass</h2>
+            <div class="inline-block p-6 bg-slate-50 border border-slate-200 rounded-2xl mb-6 shadow-sm">
+                <div id="qrCode" class="mx-auto flex justify-center"></div>
+            </div>
+            <div id="sessionDetails" class="text-left bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6 text-sm"></div>
+            <div class="flex space-x-3">
+                <button id="downloadQrBtn" class="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition shadow-sm flex items-center justify-center" onclick="downloadQR()">
+                    <i data-lucide="download" class="w-4 h-4 mr-2"></i> Download
+                </button>
+                <button id="copyQrBtn" class="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm transition border border-slate-200 flex items-center justify-center" onclick="copyQrLink()">
+                    <i data-lucide="copy" class="w-4 h-4 mr-2"></i> Copy Link
+                </button>
+            </div>
+        </div>
+      </div>
+
+      <!-- TAB: VEHICLE -->
+      <div id="tab-vehicle" class="tab-pane hidden">
+        <div class="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm" id="vehicleCard">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-slate-900">My Vehicles</h2>
+                <button class="hidden px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700 border border-slate-200 transition flex items-center" id="editVehicleBtn" onclick="openModal('vehicleModal')">
+                    <i data-lucide="edit-2" class="w-3 h-3 mr-1"></i> Edit
+                </button>
+            </div>
+            
+            <div id="vehicleDetails" class="hidden p-5 rounded-2xl bg-slate-50 border border-slate-200 flex justify-between items-center">
+                <div>
+                    <div class="text-2xl font-bold font-mono text-blue-600 tracking-widest" id="vehNumberDisplay">--</div>
+                    <div class="text-xs font-semibold text-slate-500 uppercase mt-1" id="vehTypeDisplay">--</div>
+                </div>
+                <button class="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-semibold flex items-center transition" onclick="openModal('deleteVehicleModal')">
+                    <i data-lucide="trash-2" class="w-3 h-3 mr-1"></i> Delete
+                </button>
+            </div>
+
+            <div id="noVehicleState" class="hidden text-center py-12">
+                <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-4">
+                    <i data-lucide="car" class="w-8 h-8"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-900 mb-2">No Vehicle Registered</h3>
+                <p class="text-sm text-slate-500 mb-6">Register your vehicle to book parking slots.</p>
+                <button class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-sm transition" onclick="openModal('vehicleModal')">
+                    Register Vehicle
+                </button>
+            </div>
+        </div>
+      </div>
+
+      <!-- TAB: HISTORY -->
+      <div id="tab-history" class="tab-pane hidden">
+        <div class="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-slate-900">Parking History</h2>
+                <button class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700 border border-slate-200 transition flex items-center" onclick="loadHistory()">
+                    <i data-lucide="refresh-cw" class="w-3 h-3 mr-1"></i> Refresh
+                </button>
+            </div>
+            <div class="overflow-x-auto">
+                <div id="historyTableContainer" class="w-full"></div>
+            </div>
+        </div>
+      </div>
+
+      <!-- TAB: SETTINGS -->
+      <div id="tab-settings" class="tab-pane hidden">
+        <div class="max-w-2xl p-6 rounded-3xl bg-white border border-slate-200 shadow-sm">
+            <h2 class="text-xl font-bold text-slate-900 mb-6">Profile Settings</h2>
+            <form id="settingsForm" onsubmit="saveSettings(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">Full Name</label>
+                    <input type="text" id="set_name" required class="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-slate-900 text-sm transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">Student ID</label>
+                    <input type="text" id="set_student_id" required disabled class="w-full px-4 py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-500 text-sm cursor-not-allowed">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">Vehicle Type</label>
+                        <select id="set_vehicle_type" required class="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-slate-900 text-sm transition">
+                            <option value="bike">Bike</option>
+                            <option value="car">Car</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">Vehicle Number</label>
+                        <input type="text" id="set_vehicle_number" required class="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-slate-900 text-sm transition uppercase">
+                    </div>
+                </div>
+                <p id="settings-error" class="error-msg text-rose-500 text-sm hidden"></p>
+                <div class="pt-4">
+                    <button type="submit" class="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-sm transition" id="saveSettingsBtn">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-auto border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-500">
+      <div class="max-w-7xl mx-auto px-4">
+          <span class="font-semibold text-slate-700">Apex Institute of Technology & Science</span> • 
+          Automated QR Parking Management System © 2026
+      </div>
+    </footer>
 
     <!-- MODALS -->
 
     <!-- Reserve Confirm Modal -->
-    <div id="reserveModal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Confirm Reservation</h2>
-                <button class="modal-close" onclick="closeModal('reserveModal')"><i data-lucide="x" size="20"></i></button>
+    <div id="reserveModal" class="modal-overlay fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="modal-content bg-white border border-slate-200 rounded-2xl max-w-sm w-full p-6 shadow-2xl transform scale-95 transition-transform duration-300">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold text-slate-900">Confirm Reservation</h2>
+                <button class="modal-close text-slate-400 hover:text-slate-900 transition" onclick="closeModal('reserveModal')"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
-            <div style="display:grid; gap:12px; margin-bottom:24px; font-size:13px;">
-                <div style="display:flex; justify-content:space-between;">
-                    <span class="muted">Parking Slot:</span>
-                    <strong style="color:var(--accent-primary); font-size:16px;" id="confirmSlotLabel">--</strong>
+            <div class="space-y-2 mb-6 text-sm">
+                <div class="flex justify-between p-3 rounded-lg bg-slate-50 border border-slate-100">
+                    <span class="text-slate-500">Parking Slot:</span>
+                    <strong class="text-blue-600 font-bold" id="confirmSlotLabel">--</strong>
                 </div>
-                <div style="display:flex; justify-content:space-between;">
-                    <span class="muted">Vehicle:</span>
-                    <strong id="confirmVehicleLabel">--</strong>
+                <div class="flex justify-between p-3 rounded-lg bg-slate-50 border border-slate-100">
+                    <span class="text-slate-500">Vehicle:</span>
+                    <strong class="text-slate-900 font-bold" id="confirmVehicleLabel">--</strong>
                 </div>
             </div>
-            <p id="modal-reserve-error" class="error-msg"></p>
-            <div style="display:flex; gap:12px; justify-content:flex-end;">
-                <button class="btn btn-secondary" onclick="closeModal('reserveModal')">Cancel</button>
-                <button class="btn" id="confirmReserveBtn" onclick="createParkingSession()">Confirm Reservation</button>
+            <p id="modal-reserve-error" class="error-msg text-rose-500 text-sm hidden mb-4"></p>
+            <div class="flex space-x-3 justify-end">
+                <button class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold transition" onclick="closeModal('reserveModal')">Cancel</button>
+                <button class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-sm transition" id="confirmReserveBtn" onclick="createParkingSession()">Confirm</button>
             </div>
         </div>
     </div>
 
     <!-- Add/Edit Vehicle Modal -->
-    <div id="vehicleModal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="vehicleModalTitle">Register Vehicle</h2>
-                <button class="modal-close" onclick="closeModal('vehicleModal')"><i data-lucide="x" size="20"></i></button>
+    <div id="vehicleModal" class="modal-overlay fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="modal-content bg-white border border-slate-200 rounded-2xl max-w-sm w-full p-6 shadow-2xl transform scale-95 transition-transform duration-300">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold text-slate-900" id="vehicleModalTitle">Register Vehicle</h2>
+                <button class="modal-close text-slate-400 hover:text-slate-900 transition" onclick="closeModal('vehicleModal')"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
-            <form id="vehicleForm" onsubmit="saveVehicle(event)">
-                <div class="form-group">
-                    <label>Vehicle Number</label>
-                    <input type="text" id="vehNumberInput" required placeholder="e.g. TN 01 AB 1234">
-                </div>
-                <div class="form-group">
-                    <label>Vehicle Type</label>
-                    <select id="vehTypeInput" required>
+            <form id="vehicleForm" onsubmit="saveVehicle(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">Vehicle Type</label>
+                    <select id="vehTypeInput" required class="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-slate-900 text-sm transition">
                         <option value="bike">Bike</option>
                         <option value="car">Car</option>
                     </select>
                 </div>
-                <p id="modal-vehicle-error" class="error-msg"></p>
-                <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:24px;">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('vehicleModal')">Cancel</button>
-                    <button type="submit" class="btn" id="saveVehicleBtn">Save Vehicle</button>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">Vehicle Number</label>
+                    <input type="text" id="vehNumberInput" required placeholder="e.g. TN 01 AB 1234" class="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-slate-900 text-sm uppercase transition">
+                </div>
+                <p id="modal-vehicle-error" class="error-msg text-rose-500 text-sm hidden"></p>
+                <div class="flex space-x-3 justify-end pt-4">
+                    <button type="button" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold transition" onclick="closeModal('vehicleModal')">Cancel</button>
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-sm transition" id="saveVehicleBtn">Save</button>
                 </div>
             </form>
         </div>
     </div>
 
     <!-- Delete Vehicle Modal -->
-    <div id="deleteVehicleModal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Delete Vehicle?</h2>
-                <button class="modal-close" onclick="closeModal('deleteVehicleModal')"><i data-lucide="x" size="20"></i></button>
+    <div id="deleteVehicleModal" class="modal-overlay fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="modal-content bg-white border border-slate-200 rounded-2xl max-w-sm w-full p-6 shadow-2xl transform scale-95 transition-transform duration-300">
+            <div class="flex justify-between items-center mb-2">
+                <h2 class="text-lg font-bold text-slate-900">Delete Vehicle?</h2>
+                <button class="modal-close text-slate-400 hover:text-slate-900 transition" onclick="closeModal('deleteVehicleModal')"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
-            <p style="margin-bottom:24px; color:var(--text-secondary);">This vehicle will be permanently removed from your account. Are you sure?</p>
-            <p id="modal-delete-error" class="error-msg"></p>
-            <div style="display:flex; gap:12px; justify-content:flex-end;">
-                <button class="btn btn-secondary" onclick="closeModal('deleteVehicleModal')">Cancel</button>
-                <button class="btn btn-danger" id="confirmDeleteVehBtn" onclick="deleteVehicle()">Delete Vehicle</button>
+            <p class="text-sm text-slate-500 mb-6">This vehicle will be permanently removed from your account. Are you sure?</p>
+            <p id="modal-delete-error" class="error-msg text-rose-500 text-sm hidden mb-4"></p>
+            <div class="flex space-x-3 justify-end">
+                <button class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold transition" onclick="closeModal('deleteVehicleModal')">Cancel</button>
+                <button class="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-sm font-semibold transition" id="confirmDeleteVehBtn" onclick="deleteVehicle()">Delete Vehicle</button>
             </div>
         </div>
     </div>
