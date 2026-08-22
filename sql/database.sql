@@ -11,10 +11,11 @@ drop table if exists public.parking_slots cascade;
 drop table if exists public.profiles cascade;
 
 create table public.profiles (
-    id uuid primary key references auth.users(id) on delete cascade,
+    id uuid primary key default gen_random_uuid(),
     full_name text not null default '',
     email text,
     student_id text unique not null,
+    password_hash text not null,
     role text not null default 'student' check (role in ('student','security','admin')),
     created_at timestamptz not null default now()
 );
@@ -65,17 +66,7 @@ create unique index one_open_reservation_per_student on public.parking_reservati
 create unique index one_reserved_slot on public.parking_reservations(parking_slot_id) where status in ('reserved','active');
 create unique index one_open_log_per_vehicle on public.access_logs(vehicle_id) where status = 'active';
 
--- Auth Trigger
-create or replace function public.handle_new_user() returns trigger language plpgsql security definer set search_path = public as $$ 
-begin 
-    insert into public.profiles (id,full_name,email,student_id,role) 
-    values (new.id,coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', ''),new.email,new.raw_user_meta_data->>'student_id','student'); 
-    return new; 
-end; 
-$$;
-
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created after insert on auth.users for each row execute procedure public.handle_new_user();
+-- Custom backend handles user creation now; no trigger needed.
 
 -- Utility functions
 create or replace function public.is_staff() returns boolean language sql stable security definer set search_path = public as $$ 
@@ -247,17 +238,12 @@ on conflict (slot_number) do nothing;
 -- Run this if your database already exists and you are migrating to Phone Auth
 -- ==============================================================================
 /*
-alter table public.profiles rename column name to full_name;
-alter table public.profiles drop column if exists phone;
-alter table public.profiles drop column if exists student_id;
-alter table public.profiles add column student_id text unique not null;
+-- 1. Drop old auth references and add password_hash
+alter table public.profiles drop constraint if exists profiles_id_fkey;
+alter table public.profiles add column if not exists password_hash text not null default '';
+alter table public.profiles alter column id set default gen_random_uuid();
 
--- Recreate trigger with updated column name
-create or replace function public.handle_new_user() returns trigger language plpgsql security definer set search_path = public as $$ 
-begin 
-    insert into public.profiles (id,full_name,email,student_id,role) 
-    values (new.id,coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', ''),new.email,new.raw_user_meta_data->>'student_id','student'); 
-    return new; 
-end; 
-$$;
+-- 2. Drop the Auth trigger
+drop trigger if exists on_auth_user_created on auth.users;
+drop function if exists public.handle_new_user();
 */
