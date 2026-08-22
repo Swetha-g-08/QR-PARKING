@@ -12,7 +12,7 @@ drop table if exists public.profiles cascade;
 
 create table public.profiles (
     id uuid primary key default gen_random_uuid(),
-    full_name text not null default '',
+    name text not null default '',
     email text,
     student_id text unique not null,
     password_hash text not null,

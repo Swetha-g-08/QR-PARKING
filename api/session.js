@@ -23,7 +23,7 @@ export default async function handler(req, res) {
     // Optional: fetch fresh profile data to return to client
     const { data: profile } = await supabase
       .from('profiles')
-      .select('id, full_name, student_id, role')
+      .select('id, name, student_id, role')
       .eq('id', decoded.sub)
       .single();
 

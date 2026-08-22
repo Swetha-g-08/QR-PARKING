@@ -32,7 +32,7 @@ export default async function handler(req, res) {
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .insert([{ full_name: name, student_id: studentId, password_hash, role: 'student' }])
+      .insert([{ name: name, student_id: studentId, password_hash, role: 'student' }])
       .select()
       .single();
 
