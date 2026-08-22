@@ -49,20 +49,6 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: profileError.message });
     }
 
-    const token = jwt.sign(
-      { sub: profile.id, role: 'authenticated', user_role: 'student' },
-      jwtSecret,
-      { expiresIn: '7d' }
-    );
-
-    res.setHeader('Set-Cookie', serialize('campus_session', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV !== 'development',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7
-    }));
-
     return res.status(200).json({ success: true, profile });
   } catch (err) {
     console.error(err);

@@ -24,7 +24,11 @@ export default async function handler(req, res) {
       .eq('student_id', studentId)
       .maybeSingle();
 
-    if (error || !user || !user.password_hash) {
+    if (error || !user) {
+      return res.status(401).json({ error: 'Account not found. Please create an account.' });
+    }
+
+    if (!user.password_hash) {
       return res.status(401).json({ error: 'Invalid Student ID or password.' });
     }
 

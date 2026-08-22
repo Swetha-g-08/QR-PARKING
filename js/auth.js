@@ -1,6 +1,28 @@
 document.addEventListener('DOMContentLoaded', () => { 
     // Login Flow
-    document.getElementById('login-form')?.addEventListener('submit', loginUser); 
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) {
+        loginForm.addEventListener('submit', loginUser);
+        
+        // Check for registration success parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('registered') === 'true') {
+            showMessage('login-error', 'Account created successfully. Please login.', true);
+            // Remove the query param so it doesn't show again on refresh
+            window.history.replaceState({}, document.title, 'login.html');
+            
+            // Clear message when user starts typing
+            const inputs = loginForm.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.addEventListener('input', () => {
+                    const errorDiv = document.getElementById('login-error');
+                    if (errorDiv && errorDiv.classList.contains('success-msg')) {
+                        showMessage('login-error', '');
+                    }
+                }, { once: true });
+            });
+        }
+    }
     
     // Register Flow
     document.getElementById('register-form')?.addEventListener('submit', registerUser); 
@@ -129,7 +151,7 @@ async function registerUser(e) {
             return showMessage('register-error', data.error || 'Unable to create account. Please try again.');
         }
 
-        redirectBasedOnRole('student');
+        window.location.href = 'login.html?registered=true';
     } catch (error) {
         console.error("REGISTER ERROR:", error);
         showMessage('register-error', `System Error: ${error.message || 'Unknown error occurred'}`);
