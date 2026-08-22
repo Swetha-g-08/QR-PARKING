@@ -76,7 +76,7 @@ async function loginUser(e) {
         console.log("Login error:", error);
         
         if (error) {
-            return showMessage('login-error', 'Invalid Student ID or password.');
+            return showMessage('login-error', `Login Failed: ${error.message} (Code: ${error.code || error.status || 'N/A'})`);
         }
         
         const p = await getUserRole(); 
@@ -84,7 +84,7 @@ async function loginUser(e) {
         redirectBasedOnRole(p.role); 
     } catch (error) {
         console.error("LOGIN ERROR:", error);
-        showMessage('login-error', 'An error occurred during login.');
+        showMessage('login-error', `System Error: ${error.message || 'Unknown error occurred'}`);
     } finally {
         if (btn) setLoading(btn, false);
     }
@@ -142,7 +142,7 @@ async function registerUser(e) {
             if (error.message.toLowerCase().includes('already registered')) {
                 return showMessage('register-error', 'This Student ID is already registered.');
             }
-            return showMessage('register-error', 'Unable to create account. Please try again.');
+            return showMessage('register-error', `Signup Failed: ${error.message} (Code: ${error.code || error.status || 'N/A'})`);
         }
 
         if (data.user) {
@@ -159,7 +159,7 @@ async function registerUser(e) {
         redirectBasedOnRole('student');
     } catch (error) {
         console.error("REGISTER ERROR:", error);
-        showMessage('register-error', 'An error occurred during registration.');
+        showMessage('register-error', `System Error: ${error.message || 'Unknown error occurred'}`);
     } finally {
         if (btn) setLoading(btn, false);
     }
