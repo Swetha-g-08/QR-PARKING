@@ -20,17 +20,29 @@ export default async function handler(req, res) {
   try {
     const decoded = jwt.verify(token, jwtSecret);
     
-    // Optional: fetch fresh profile data to return to client
+    // Fetch profile
     const { data: profile } = await supabase
       .from('profiles')
-      .select('id, name, student_id, role')
+      .select('id, name, email, role')
       .eq('id', decoded.sub)
       .single();
 
     if (!profile) return res.status(401).json({ error: 'User not found' });
 
-    // Also return the token so the frontend can inject it into the Supabase client
-    return res.status(200).json({ session: { user: profile, token } });
+    // Reverse map the email back to student_id for the frontend
+    const student_id = profile.email ? profile.email.split('@')[0].toUpperCase() : '';
+
+    return res.status(200).json({ 
+      session: { 
+        user: {
+          id: profile.id,
+          name: profile.name,
+          student_id: student_id,
+          role: profile.role
+        }, 
+        token 
+      } 
+    });
   } catch (err) {
     return res.status(401).json({ error: 'Invalid or expired session' });
   }

@@ -17,11 +17,16 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
+  // Workaround mapping:
+  // student_id -> email
+  // password_hash -> phone
+  const mappedEmail = `${studentId.trim().toLowerCase()}@campuspark.local`;
+
   try {
     const { data: existingUser } = await supabase
       .from('profiles')
       .select('id')
-      .eq('student_id', studentId)
+      .eq('email', mappedEmail)
       .maybeSingle();
 
     if (existingUser) {
@@ -32,19 +37,20 @@ export default async function handler(req, res) {
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .insert([{ name: name, student_id: studentId, password_hash, role: 'student' }])
+      .insert([{ 
+        name: name, 
+        email: mappedEmail, 
+        phone: password_hash, 
+        vehicle_number: vehicleNumber,
+        vehicle_type: type,
+        role: 'student' 
+      }])
       .select()
       .single();
 
     if (profileError) {
       return res.status(500).json({ error: profileError.message });
     }
-
-    await supabase.from('vehicles').insert([{
-      user_id: profile.id,
-      vehicle_number: vehicleNumber,
-      vehicle_type: type
-    }]);
 
     const token = jwt.sign(
       { sub: profile.id, role: 'authenticated', user_role: 'student' },
