@@ -18,16 +18,11 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
-  // Workaround mapping:
-  // student_id -> email
-  // password_hash -> phone
-  const mappedEmail = `${studentId.trim().toLowerCase()}@campuspark.local`;
-
   try {
     const { data: existingUser } = await supabase
       .from('profiles')
       .select('id')
-      .eq('email', mappedEmail)
+      .eq('student_id', studentId)
       .maybeSingle();
 
     if (existingUser) {
@@ -41,8 +36,8 @@ export default async function handler(req, res) {
       .insert([{ 
         id: crypto.randomUUID(),
         name: name, 
-        email: mappedEmail, 
-        phone: password_hash, 
+        student_id: studentId, 
+        password_hash: password_hash, 
         vehicle_number: vehicleNumber,
         vehicle_type: type,
         role: 'student' 

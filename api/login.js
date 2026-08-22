@@ -17,21 +17,18 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing credentials' });
   }
 
-  const mappedEmail = `${studentId.trim().toLowerCase()}@campuspark.local`;
-
   try {
     const { data: user, error } = await supabase
       .from('profiles')
-      .select('id, phone, role')
-      .eq('email', mappedEmail)
+      .select('id, password_hash, role')
+      .eq('student_id', studentId)
       .maybeSingle();
 
-    if (error || !user || !user.phone) {
+    if (error || !user || !user.password_hash) {
       return res.status(401).json({ error: 'Invalid Student ID or password.' });
     }
 
-    // phone contains the bcrypt hash
-    const match = await bcrypt.compare(password, user.phone);
+    const match = await bcrypt.compare(password, user.password_hash);
     if (!match) {
       return res.status(401).json({ error: 'Invalid Student ID or password.' });
     }

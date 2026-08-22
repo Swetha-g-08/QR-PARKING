@@ -23,21 +23,18 @@ export default async function handler(req, res) {
     // Fetch profile
     const { data: profile } = await supabase
       .from('profiles')
-      .select('id, name, email, role')
+      .select('id, name, student_id, role')
       .eq('id', decoded.sub)
       .single();
 
     if (!profile) return res.status(401).json({ error: 'User not found' });
-
-    // Reverse map the email back to student_id for the frontend
-    const student_id = profile.email ? profile.email.split('@')[0].toUpperCase() : '';
 
     return res.status(200).json({ 
       session: { 
         user: {
           id: profile.id,
           name: profile.name,
-          student_id: student_id,
+          student_id: profile.student_id,
           role: profile.role
         }, 
         token 
