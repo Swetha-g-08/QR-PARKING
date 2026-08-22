@@ -210,7 +210,7 @@ async function loadStudents() {
             v_type = s.vehicles[0].vehicle_type;
         }
         html += `<tr>
-            <td><strong>${s.name}</strong></td>
+            <td><strong>${s.full_name}</strong></td>
             <td class="muted">${s.email}</td>
             <td>${v_num}</td>
             <td style="text-transform:uppercase;">${v_type}</td>
@@ -241,7 +241,7 @@ async function loadActiveSessions() {
     
     data.forEach((s, i) => {
         const row = `<tr>
-            <td><strong>${s.profiles.name}</strong></td>
+            <td><strong>${s.profiles.full_name}</strong></td>
             <td><span class="badge badge-active">${s.parking_slots.slot_number}</span></td>
             <td>${s.vehicles.vehicle_number}</td>
             <td class="muted">${new Date(s.check_in_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
@@ -279,7 +279,7 @@ async function loadHistory() {
     data.forEach((s, i) => {
         const dateStr = new Date(s.created_at).toLocaleDateString();
         const row = `<tr>
-            <td><strong>${s.profiles?.name || 'N/A'}</strong></td>
+            <td><strong>${s.profiles?.full_name || 'N/A'}</strong></td>
             <td>${s.parking_slots?.slot_number || 'N/A'}</td>
             <td>${s.vehicles?.vehicle_number || 'N/A'}</td>
             <td><span class="badge badge-completed">${s.status}</span></td>

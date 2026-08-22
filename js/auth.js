@@ -1,6 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => { 
-    document.getElementById('login-form')?.addEventListener('submit', loginUser); 
-    document.getElementById('register-form')?.addEventListener('submit', registerUser); 
+    // Login Flow
+    document.getElementById('login-phone-form')?.addEventListener('submit', loginPhoneUser); 
+    document.getElementById('login-otp-form')?.addEventListener('submit', verifyLoginOtp);
+    
+    // Register Flow
+    document.getElementById('register-phone-form')?.addEventListener('submit', registerPhoneUser); 
+    document.getElementById('register-otp-form')?.addEventListener('submit', verifyRegisterOtp);
+    
+    setupOtpInputs('login-otp-form');
+    setupOtpInputs('register-otp-form');
 });
 
 function showMessage(id, text, success = false) { 
@@ -41,75 +49,188 @@ function redirectBasedOnRole(role) {
     location.href = role === 'admin' ? 'admin.html' : role === 'security' ? 'security.html' : role === 'student' ? 'student.html' : 'index.html'; 
 }
 
-async function loginUser(e) { 
-    e.preventDefault(); 
-    const mail = document.getElementById('email').value.trim(), pass = document.getElementById('password').value; 
-    const { data, error } = await supabase.auth.signInWithPassword({ email: mail, password: pass }); 
-    if (error || !data.user) return showMessage('login-error', 'Invalid email or password.'); 
+// ----- PHONE AUTHENTICATION (LOGIN) -----
+let loginPhoneStore = '';
+
+async function loginPhoneUser(e) {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    const phone = document.getElementById('phone').value.trim();
+    if (!phone) return showMessage('login-error', 'Please enter a valid phone number.');
+    
+    loginPhoneStore = phone;
+    showMessage('login-error', '');
+    if (btn) setLoading(btn, true, 'Sending OTP...');
+    
+    const { error } = await supabase.auth.signInWithOtp({ phone });
+    if (btn) setLoading(btn, false);
+    
+    if (error) return showMessage('login-error', 'Unable to send OTP. Please check the phone number and try again.');
+    
+    document.getElementById('login-step-phone').style.display = 'none';
+    document.getElementById('login-step-otp').style.display = 'block';
+    document.getElementById('display-phone').textContent = phone;
+    startResendCountdown('login');
+}
+
+async function verifyLoginOtp(e) {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    const inputs = document.querySelectorAll('#login-otp-form .otp-input');
+    const otp = Array.from(inputs).map(i => i.value).join('');
+    
+    if (otp.length !== 6) return showMessage('otp-error', 'Please enter the 6-digit code.');
+    
+    showMessage('otp-error', '');
+    if (btn) setLoading(btn, true, 'Verifying...');
+    
+    const { data, error } = await supabase.auth.verifyOtp({ phone: loginPhoneStore, token: otp, type: 'sms' });
+    if (btn) setLoading(btn, false);
+    
+    if (error) return showMessage('otp-error', 'Incorrect OTP. Please try again.');
+    
     const p = await getUserRole(); 
-    if (!p) return showMessage('login-error', 'Your profile is not ready. Please contact an administrator.'); 
+    if (!p) return showMessage('otp-error', 'Your profile is not ready. Are you sure you registered?'); 
     redirectBasedOnRole(p.role); 
 }
 
-async function registerUser(e) { 
-    e.preventDefault(); 
-    
-    const form = e.target;
-    const btn = form.querySelector('button[type="submit"]');
-    
+// ----- PHONE AUTHENTICATION (REGISTER) -----
+let registerPhoneStore = '';
+let registerDetailsStore = {};
+
+async function registerPhoneUser(e) {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
     const n = document.getElementById('name').value.trim();
-    const mail = document.getElementById('email').value.trim();
-    const pass = document.getElementById('password').value;
-    const confirmPass = document.getElementById('confirm_password').value;
     const ph = document.getElementById('phone').value.trim();
     const type = document.getElementById('vehicle_type').value;
     const vehicle_number = document.getElementById('vehicle_number').value.trim().toUpperCase();
-          
-    if (!n) return showMessage('register-error', 'Please enter your full name.');
-    if (!mail || !mail.includes('@')) return showMessage('register-error', 'Please enter a valid email.');
-    if (pass.length < 6) return showMessage('register-error', 'Password must contain at least 6 characters.');
-    if (pass !== confirmPass) return showMessage('register-error', 'Passwords do not match.');
-    if (!vehicle_number) return showMessage('register-error', 'Please enter your vehicle number.'); 
+    
+    if (!n || !ph || !vehicle_number) return showMessage('register-error', 'Please fill all required fields.');
+    
+    registerPhoneStore = ph;
+    registerDetailsStore = { n, ph, type, vehicle_number };
     
     showMessage('register-error', '');
-    if (btn) setLoading(btn, true, 'Creating account...');
+    if (btn) setLoading(btn, true, 'Sending OTP...');
     
-    try {
-        const details = { name: n, phone: ph }; 
-        const { data, error } = await supabase.auth.signUp({ email: mail, password: pass, options: { data: details } }); 
-        
-        if (error) {
-            if (error.message.toLowerCase().includes('already registered')) {
-                throw new Error("This email is already registered. Please log in instead.");
-            }
-            throw error;
-        }
-        
-        // Wait for auth trigger to insert profile
-        await new Promise(r => setTimeout(r, 800));
+    const { error } = await supabase.auth.signInWithOtp({ 
+        phone: ph, 
+        options: { data: { name: n } } 
+    });
+    if (btn) setLoading(btn, false);
+    
+    if (error) return showMessage('register-error', 'Unable to send OTP. Please check the phone number and try again.');
+    
+    document.getElementById('register-step-form').style.display = 'none';
+    document.getElementById('register-step-otp').style.display = 'block';
+    document.getElementById('register-display-phone').textContent = ph;
+    startResendCountdown('register');
+}
 
-        if (data.user) {
-            const { error: pe } = await supabase.from('profiles').update({ name: n, phone: ph, email: mail }).eq('id', data.user.id); 
-            if (pe) console.error("Profile update error", pe);
-            
-            const { error: ve } = await supabase.from('vehicles').insert([{
-                user_id: data.user.id,
-                vehicle_number: vehicle_number,
-                vehicle_type: type
-            }]);
-            if (ve) console.error("Vehicle insert error", ve);
-        }
-
-        if (!data.session) {
-            showMessage('register-error', 'Account created successfully. Please check your email to confirm your account.', true);
-        } else {
-            showMessage('register-error', 'Account created successfully! Redirecting...', true);
-            setTimeout(() => redirectBasedOnRole('student'), 1500);
-        }
-    } catch (err) {
-        showMessage('register-error', err.message || 'Could not create the account. Check the email and password.');
-    } finally {
+async function verifyRegisterOtp(e) {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    const inputs = document.querySelectorAll('#register-otp-form .otp-input');
+    const otp = Array.from(inputs).map(i => i.value).join('');
+    
+    if (otp.length !== 6) return showMessage('register-otp-error', 'Please enter the 6-digit code.');
+    
+    showMessage('register-otp-error', '');
+    if (btn) setLoading(btn, true, 'Verifying...');
+    
+    const { data, error } = await supabase.auth.verifyOtp({ phone: registerPhoneStore, token: otp, type: 'sms' });
+    
+    if (error) {
         if (btn) setLoading(btn, false);
+        return showMessage('register-otp-error', 'Incorrect OTP. Please try again.');
+    }
+    
+    await new Promise(r => setTimeout(r, 800)); // wait for trigger
+
+    if (data.user) {
+        const { error: pe } = await supabase.from('profiles').update({ full_name: registerDetailsStore.n, phone: registerPhoneStore }).eq('id', data.user.id); 
+        const { error: ve } = await supabase.from('vehicles').insert([{
+            user_id: data.user.id,
+            vehicle_number: registerDetailsStore.vehicle_number,
+            vehicle_type: registerDetailsStore.type
+        }]);
+    }
+
+    if (btn) setLoading(btn, false);
+    redirectBasedOnRole('student');
+}
+
+// ----- OTP UX UTILITIES -----
+function setupOtpInputs(formId) {
+    const form = document.getElementById(formId);
+    if (!form) return;
+    const inputs = form.querySelectorAll('.otp-input');
+    
+    inputs.forEach((input, index) => {
+        input.addEventListener('input', (e) => {
+            if (e.target.value.length === 1 && index < inputs.length - 1) {
+                inputs[index + 1].focus();
+            }
+        });
+        
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                inputs[index - 1].focus();
+            }
+        });
+
+        input.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const pastedData = e.clipboardData.getData('text').slice(0, inputs.length).replace(/[^0-9]/g, '');
+            pastedData.split('').forEach((char, i) => {
+                if (inputs[index + i]) {
+                    inputs[index + i].value = char;
+                    if (index + i < inputs.length - 1) inputs[index + i + 1].focus();
+                }
+            });
+        });
+    });
+}
+
+function changePhoneNumber(context) {
+    if (context === 'login') {
+        document.getElementById('login-step-otp').style.display = 'none';
+        document.getElementById('login-step-phone').style.display = 'block';
+        document.querySelectorAll('#login-otp-form .otp-input').forEach(i => i.value = '');
+    } else {
+        document.getElementById('register-step-otp').style.display = 'none';
+        document.getElementById('register-step-form').style.display = 'block';
+        document.querySelectorAll('#register-otp-form .otp-input').forEach(i => i.value = '');
+    }
+}
+
+function startResendCountdown(context) {
+    const btn = document.getElementById(context === 'login' ? 'resend-btn' : 'register-resend-btn');
+    const txt = document.getElementById(context === 'login' ? 'resend-text' : 'register-resend-text');
+    let timeLeft = 30;
+    
+    btn.disabled = true;
+    btn.onclick = () => resendOtp(context);
+    
+    const timer = setInterval(() => {
+        timeLeft--;
+        txt.textContent = `Resend OTP in ${timeLeft}s`;
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            txt.textContent = "Didn't receive the code?";
+            btn.disabled = false;
+        }
+    }, 1000);
+}
+
+async function resendOtp(context) {
+    const phone = context === 'login' ? loginPhoneStore : registerPhoneStore;
+    const { error } = await supabase.auth.signInWithOtp({ phone });
+    if (error) {
+        showMessage(context === 'login' ? 'otp-error' : 'register-otp-error', 'Unable to resend OTP. Try again later.');
+    } else {
+        startResendCountdown(context);
     }
 }
 

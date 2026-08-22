@@ -120,7 +120,7 @@ function displayReservation(reservation) {
             <div style="display: grid; gap: 12px; font-size: 13px;">
                 <div style="display: flex; justify-content: space-between;">
                     <span class="muted">Student:</span> 
-                    <strong style="color: var(--text-primary);">${reservation.profiles.name}</strong>
+                    <strong style="color: var(--text-primary);">${reservation.profiles.full_name}</strong>
                 </div>
                 <div style="display: flex; justify-content: space-between;">
                     <span class="muted">Vehicle:</span> 
@@ -145,7 +145,7 @@ function displayReservation(reservation) {
             <div style="display: grid; gap: 12px; font-size: 13px;">
                 <div style="display: flex; justify-content: space-between;">
                     <span class="muted">Student:</span> 
-                    <strong style="color: var(--text-primary);">${reservation.profiles.name}</strong>
+                    <strong style="color: var(--text-primary);">${reservation.profiles.full_name}</strong>
                 </div>
                 <div style="display: flex; justify-content: space-between;">
                     <span class="muted">Vehicle:</span> 

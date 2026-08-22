@@ -8,7 +8,7 @@ let activeTab = 'tab-dashboard';
 document.addEventListener('DOMContentLoaded', async () => {
     currentUserProfile = await checkAuthAndRole('student');
     if (currentUserProfile) {
-        document.getElementById('welcomeMessage').textContent = `Good evening, ${currentUserProfile.name.split(' ')[0]}`;
+        document.getElementById('welcomeMessage').textContent = `Good evening, ${currentUserProfile.full_name.split(' ')[0]}`;
         
         setupNavigation();
         await refreshAllData();

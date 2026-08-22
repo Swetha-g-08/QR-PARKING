@@ -12,9 +12,9 @@ drop table if exists public.profiles cascade;
 
 create table public.profiles (
     id uuid primary key references auth.users(id) on delete cascade,
-    name text not null default '',
-    email text not null default '',
-    phone text,
+    full_name text not null default '',
+    email text,
+    phone text unique,
     role text not null default 'student' check (role in ('student','security','admin')),
     created_at timestamptz not null default now()
 );
@@ -68,8 +68,8 @@ create unique index one_open_log_per_vehicle on public.access_logs(vehicle_id) w
 -- Auth Trigger
 create or replace function public.handle_new_user() returns trigger language plpgsql security definer set search_path = public as $$ 
 begin 
-    insert into public.profiles (id,name,email,phone,role) 
-    values (new.id,coalesce(new.raw_user_meta_data->>'name',''),coalesce(new.email,''),new.raw_user_meta_data->>'phone','student'); 
+    insert into public.profiles (id,full_name,email,phone,role) 
+    values (new.id,coalesce(new.raw_user_meta_data->>'name',''),new.email,new.phone,'student'); 
     return new; 
 end; 
 $$;
@@ -241,3 +241,23 @@ insert into public.parking_slots(slot_number,vehicle_type) values
 ('C01','car'),('C02','car'),('C03','car'),('C04','car'),('C05','car'),
 ('C06','car'),('C07','car'),('C08','car'),('C09','car'),('C10','car') 
 on conflict (slot_number) do nothing;
+
+-- ==============================================================================
+-- MIGRATION SCRIPT FOR EXISTING DATABASES
+-- Run this if your database already exists and you are migrating to Phone Auth
+-- ==============================================================================
+/*
+alter table public.profiles rename column name to full_name;
+alter table public.profiles alter column email drop not null;
+alter table public.profiles drop column if exists phone;
+alter table public.profiles add column phone text unique;
+
+-- Recreate trigger with updated column name
+create or replace function public.handle_new_user() returns trigger language plpgsql security definer set search_path = public as $$ 
+begin 
+    insert into public.profiles (id,full_name,email,phone,role) 
+    values (new.id,coalesce(new.raw_user_meta_data->>'name',''),new.email,new.phone,'student'); 
+    return new; 
+end; 
+$$;
+*/
