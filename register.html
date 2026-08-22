@@ -21,94 +21,70 @@
             <p class="muted" style="margin-top: 8px; font-size: 13px;">Start using smart campus parking.</p>
         </div>
         
-        <!-- STEP 1: Registration Form -->
-        <div id="register-step-form">
-            <form id="register-phone-form">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                    <div class="form-group" style="grid-column: 1 / -1;">
-                        <label for="name">Full Name</label>
-                        <div style="position: relative;">
-                            <i data-lucide="user" size="16" style="position: absolute; left: 12px; top: 14px; color: var(--text-muted);"></i>
-                            <input type="text" id="name" required style="padding-left: 40px;" placeholder="Alex Kumar">
-                        </div>
-                    </div>
-                    
-                    <div class="form-group" style="grid-column: 1 / -1;">
-                        <label for="phone">Phone Number</label>
-                        <div style="position: relative;">
-                            <i data-lucide="phone" size="16" style="position: absolute; left: 12px; top: 14px; color: var(--text-muted);"></i>
-                            <input type="tel" id="phone" required style="padding-left: 40px;" placeholder="+91 9876543210" pattern="^\+?[0-9\s-]{10,15}$">
-                        </div>
-                        <p class="muted" style="font-size: 11px; margin-top: 4px;">Use E.164 format with country code (e.g. +91)</p>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="vehicle_type">Vehicle Type</label>
-                        <div style="position: relative;">
-                            <i data-lucide="car" size="16" style="position: absolute; left: 12px; top: 14px; color: var(--text-muted);"></i>
-                            <select id="vehicle_type" required style="padding-left: 40px; appearance: none;">
-                                <option value="bike">Bike</option>
-                                <option value="car">Car</option>
-                            </select>
-                            <i data-lucide="chevron-down" size="16" style="position: absolute; right: 12px; top: 14px; color: var(--text-muted); pointer-events: none;"></i>
-                        </div>
-                    </div>
-
-                    <div class="form-group" style="grid-column: 1 / -1;">
-                        <label for="vehicle_number">Vehicle Number</label>
-                        <div style="position: relative;">
-                            <i data-lucide="hash" size="16" style="position: absolute; left: 12px; top: 14px; color: var(--text-muted);"></i>
-                            <input type="text" id="vehicle_number" required style="padding-left: 40px;" placeholder="e.g. TN 01 AB 1234">
-                        </div>
+        <form id="register-form">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="name">Full Name</label>
+                    <div style="position: relative;">
+                        <i data-lucide="user" size="16" style="position: absolute; left: 12px; top: 14px; color: var(--text-muted);"></i>
+                        <input type="text" id="name" required style="padding-left: 40px;" placeholder="Alex Kumar">
                     </div>
                 </div>
                 
-                <div id="register-error" class="error-msg text-center" style="margin-top: 8px;"></div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="student_id">Student ID</label>
+                    <div style="position: relative;">
+                        <i data-lucide="hash" size="16" style="position: absolute; left: 12px; top: 14px; color: var(--text-muted);"></i>
+                        <input type="text" id="student_id" required style="padding-left: 40px;" placeholder="23CS001">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div style="position: relative;">
+                        <i data-lucide="lock" size="16" style="position: absolute; left: 12px; top: 14px; color: var(--text-muted);"></i>
+                        <input type="password" id="password" required style="padding-left: 40px;" placeholder="••••••••">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirm_password">Confirm Password</label>
+                    <div style="position: relative;">
+                        <i data-lucide="lock" size="16" style="position: absolute; left: 12px; top: 14px; color: var(--text-muted);"></i>
+                        <input type="password" id="confirm_password" required style="padding-left: 40px;" placeholder="••••••••">
+                    </div>
+                </div>
                 
-                <button type="submit" class="btn" style="width: 100%; margin-top: 24px; padding: 12px;">
-                    SEND OTP <i data-lucide="arrow-right" size="16"></i>
-                </button>
-            </form>
+                <div class="form-group">
+                    <label for="vehicle_type">Vehicle Type</label>
+                    <div style="position: relative;">
+                        <i data-lucide="car" size="16" style="position: absolute; left: 12px; top: 14px; color: var(--text-muted);"></i>
+                        <select id="vehicle_type" required style="padding-left: 40px; appearance: none;">
+                            <option value="bike">Bike</option>
+                            <option value="car">Car</option>
+                        </select>
+                        <i data-lucide="chevron-down" size="16" style="position: absolute; right: 12px; top: 14px; color: var(--text-muted); pointer-events: none;"></i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="vehicle_number">Vehicle Number</label>
+                    <div style="position: relative;">
+                        <i data-lucide="hash" size="16" style="position: absolute; left: 12px; top: 14px; color: var(--text-muted);"></i>
+                        <input type="text" id="vehicle_number" required style="padding-left: 40px;" placeholder="TN 01 AB 1234">
+                    </div>
+                </div>
+            </div>
             
-            <div style="margin-top: 32px; text-align: center; font-size: 13px; color: var(--text-secondary);">
-                Already have an account? <a href="login.html" style="font-weight: 500;">Sign in</a>
-            </div>
-        </div>
-
-        <!-- STEP 2: OTP Verification -->
-        <div id="register-step-otp" style="display: none;">
-            <div style="text-align: center; margin-bottom: 24px;">
-                <h2 style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Verify your phone</h2>
-                <p class="muted" style="font-size: 13px;">We sent a verification code to:<br><strong id="register-display-phone" style="color: var(--text-primary);"></strong></p>
-            </div>
-
-            <form id="register-otp-form">
-                <div class="otp-container">
-                    <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
-                    <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
-                    <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
-                    <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
-                    <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
-                    <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
-                </div>
-
-                <div id="register-otp-error" class="error-msg text-center"></div>
-
-                <button type="submit" class="btn" style="width: 100%; margin-top: 24px; padding: 12px;">
-                    VERIFY & CONTINUE
-                </button>
-            </form>
-
-            <div class="otp-resend-container">
-                <span id="register-resend-text">Didn't receive the code?</span>
-                <button type="button" id="register-resend-btn" class="otp-resend-btn">Resend OTP</button>
-            </div>
-
-            <div style="text-align: center; margin-top: 16px;">
-                <button type="button" onclick="changePhoneNumber('register')" style="background: none; border: none; color: var(--text-muted); font-size: 12px; cursor: pointer;">
-                    CHANGE PHONE NUMBER
-                </button>
-            </div>
+            <div id="register-error" class="error-msg text-center" style="margin-top: 16px;"></div>
+            
+            <button type="submit" class="btn" style="width: 100%; margin-top: 24px; padding: 12px;">
+                CREATE ACCOUNT <i data-lucide="arrow-right" size="16"></i>
+            </button>
+        </form>
+        
+        <div style="margin-top: 32px; text-align: center; font-size: 13px; color: var(--text-secondary);">
+            Already have an account? <a href="login.html" style="font-weight: 500;">Sign in</a>
         </div>
 
     </div>

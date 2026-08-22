@@ -201,7 +201,7 @@ async function loadStudents() {
     const container = document.getElementById('studentsTable');
     if (!data || !data.length) return container.innerHTML = '<p class="muted">No students found.</p>';
     
-    let html = `<table><tr><th>Name</th><th>Email</th><th>Vehicle</th><th>Type</th></tr>`;
+    let html = `<table><tr><th>Name</th><th>Student ID</th><th>Vehicle</th><th>Type</th></tr>`;
     data.forEach(s => {
         let v_num = '--';
         let v_type = '--';
@@ -211,7 +211,7 @@ async function loadStudents() {
         }
         html += `<tr>
             <td><strong>${s.full_name}</strong></td>
-            <td class="muted">${s.email}</td>
+            <td class="muted">${s.student_id}</td>
             <td>${v_num}</td>
             <td style="text-transform:uppercase;">${v_type}</td>
         </tr>`;

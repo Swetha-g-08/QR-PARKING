@@ -1,14 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => { 
     // Login Flow
-    document.getElementById('login-phone-form')?.addEventListener('submit', loginPhoneUser); 
-    document.getElementById('login-otp-form')?.addEventListener('submit', verifyLoginOtp);
+    document.getElementById('login-form')?.addEventListener('submit', loginUser); 
     
     // Register Flow
-    document.getElementById('register-phone-form')?.addEventListener('submit', registerPhoneUser); 
-    document.getElementById('register-otp-form')?.addEventListener('submit', verifyRegisterOtp);
-    
-    setupOtpInputs('login-otp-form');
-    setupOtpInputs('register-otp-form');
+    document.getElementById('register-form')?.addEventListener('submit', registerUser); 
 });
 
 function showMessage(id, text, success = false) { 
@@ -20,7 +15,7 @@ function showMessage(id, text, success = false) {
 }
 
 async function getCurrentUser() { 
-    const { data: { user } } = await supabase.auth.getUser(); 
+    const { data: { user } } = await window.supabaseClient.auth.getUser(); 
     return user; 
 }
 
@@ -29,12 +24,12 @@ async function getUserRole() {
     if (!u) return null; 
     
     // Fetch profile
-    const { data: profile } = await supabase.from('profiles').select('*').eq('id', u.id).single(); 
+    const { data: profile } = await window.supabaseClient.from('profiles').select('*').eq('id', u.id).single(); 
     if (!profile) return null;
 
     // Fetch vehicle if student
     if (profile.role === 'student') {
-        const { data: vehicle } = await supabase.from('vehicles').select('*').eq('user_id', u.id).order('created_at', {ascending: false}).limit(1).single();
+        const { data: vehicle } = await window.supabaseClient.from('vehicles').select('*').eq('user_id', u.id).order('created_at', {ascending: false}).limit(1).single();
         if (vehicle) {
             profile.vehicle_id = vehicle.id;
             profile.vehicle_number = vehicle.vehicle_number;
@@ -49,111 +44,85 @@ function redirectBasedOnRole(role) {
     location.href = role === 'admin' ? 'admin.html' : role === 'security' ? 'security.html' : role === 'student' ? 'student.html' : 'index.html'; 
 }
 
-// ----- PHONE AUTHENTICATION (LOGIN) -----
-let loginPhoneStore = '';
-
-async function loginPhoneUser(e) {
-    e.preventDefault();
-    const btn = e.target.querySelector('button[type="submit"]');
-    const phone = document.getElementById('phone').value.trim();
-    if (!phone) return showMessage('login-error', 'Please enter a valid phone number.');
-    
-    loginPhoneStore = phone;
-    showMessage('login-error', '');
-    if (btn) setLoading(btn, true, 'Sending OTP...');
-    
-    const { error } = await supabase.auth.signInWithOtp({ phone });
-    if (btn) setLoading(btn, false);
-    
-    if (error) return showMessage('login-error', 'Unable to send OTP. Please check the phone number and try again.');
-    
-    document.getElementById('login-step-phone').style.display = 'none';
-    document.getElementById('login-step-otp').style.display = 'block';
-    document.getElementById('display-phone').textContent = phone;
-    startResendCountdown('login');
+function getInternalEmail(studentId) {
+    return `${studentId.trim().toLowerCase()}@campuspark.local`;
 }
 
-async function verifyLoginOtp(e) {
+// ----- LOGIN -----
+async function loginUser(e) {
     e.preventDefault();
     const btn = e.target.querySelector('button[type="submit"]');
-    const inputs = document.querySelectorAll('#login-otp-form .otp-input');
-    const otp = Array.from(inputs).map(i => i.value).join('');
+    const studentId = document.getElementById('student_id').value.trim().toUpperCase();
+    const password = document.getElementById('password').value;
     
-    if (otp.length !== 6) return showMessage('otp-error', 'Please enter the 6-digit code.');
+    if (!studentId || !password) return showMessage('login-error', 'Please enter your Student ID and password.');
     
-    showMessage('otp-error', '');
-    if (btn) setLoading(btn, true, 'Verifying...');
+    showMessage('login-error', '');
+    if (btn) setLoading(btn, true, 'Logging in...');
     
-    const { data, error } = await supabase.auth.verifyOtp({ phone: loginPhoneStore, token: otp, type: 'sms' });
+    const internalEmail = getInternalEmail(studentId);
+    
+    const { data, error } = await window.supabaseClient.auth.signInWithPassword({
+        email: internalEmail,
+        password: password
+    });
+    
     if (btn) setLoading(btn, false);
     
-    if (error) return showMessage('otp-error', 'Incorrect OTP. Please try again.');
+    if (error) {
+        console.error("Login error:", error);
+        return showMessage('login-error', 'Invalid Student ID or password.');
+    }
     
     const p = await getUserRole(); 
-    if (!p) return showMessage('otp-error', 'Your profile is not ready. Are you sure you registered?'); 
+    if (!p) return showMessage('login-error', 'Account not found. Please create an account.'); 
     redirectBasedOnRole(p.role); 
 }
 
-// ----- PHONE AUTHENTICATION (REGISTER) -----
-let registerPhoneStore = '';
-let registerDetailsStore = {};
-
-async function registerPhoneUser(e) {
+// ----- REGISTER -----
+async function registerUser(e) {
     e.preventDefault();
     const btn = e.target.querySelector('button[type="submit"]');
-    const n = document.getElementById('name').value.trim();
-    const ph = document.getElementById('phone').value.trim();
+    const name = document.getElementById('name').value.trim();
+    const studentId = document.getElementById('student_id').value.trim().toUpperCase();
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
     const type = document.getElementById('vehicle_type').value;
-    const vehicle_number = document.getElementById('vehicle_number').value.trim().toUpperCase();
+    const vehicleNumber = document.getElementById('vehicle_number').value.trim().toUpperCase();
     
-    if (!n || !ph || !vehicle_number) return showMessage('register-error', 'Please fill all required fields.');
+    if (!name || !studentId || !password || !confirmPassword || !vehicleNumber) {
+        return showMessage('register-error', 'Please fill all required fields.');
+    }
     
-    registerPhoneStore = ph;
-    registerDetailsStore = { n, ph, type, vehicle_number };
+    if (password.length < 6) return showMessage('register-error', 'Password must contain at least 6 characters.');
+    if (password !== confirmPassword) return showMessage('register-error', 'Passwords do not match.');
     
     showMessage('register-error', '');
-    if (btn) setLoading(btn, true, 'Sending OTP...');
+    if (btn) setLoading(btn, true, 'Creating account...');
     
-    const { error } = await supabase.auth.signInWithOtp({ 
-        phone: ph, 
-        options: { data: { name: n } } 
+    const internalEmail = getInternalEmail(studentId);
+    
+    const { data, error } = await window.supabaseClient.auth.signUp({ 
+        email: internalEmail,
+        password: password,
+        options: { data: { name: name, student_id: studentId } } 
     });
-    if (btn) setLoading(btn, false);
-    
-    if (error) return showMessage('register-error', 'Unable to send OTP. Please check the phone number and try again.');
-    
-    document.getElementById('register-step-form').style.display = 'none';
-    document.getElementById('register-step-otp').style.display = 'block';
-    document.getElementById('register-display-phone').textContent = ph;
-    startResendCountdown('register');
-}
-
-async function verifyRegisterOtp(e) {
-    e.preventDefault();
-    const btn = e.target.querySelector('button[type="submit"]');
-    const inputs = document.querySelectorAll('#register-otp-form .otp-input');
-    const otp = Array.from(inputs).map(i => i.value).join('');
-    
-    if (otp.length !== 6) return showMessage('register-otp-error', 'Please enter the 6-digit code.');
-    
-    showMessage('register-otp-error', '');
-    if (btn) setLoading(btn, true, 'Verifying...');
-    
-    const { data, error } = await supabase.auth.verifyOtp({ phone: registerPhoneStore, token: otp, type: 'sms' });
     
     if (error) {
         if (btn) setLoading(btn, false);
-        return showMessage('register-otp-error', 'Incorrect OTP. Please try again.');
+        console.error("Register error:", error);
+        if (error.message.toLowerCase().includes('already registered')) {
+            return showMessage('register-error', 'This Student ID is already registered.');
+        }
+        return showMessage('register-error', 'Unable to create account. Please try again.');
     }
-    
-    await new Promise(r => setTimeout(r, 800)); // wait for trigger
 
     if (data.user) {
-        const { error: pe } = await supabase.from('profiles').update({ full_name: registerDetailsStore.n, phone: registerPhoneStore }).eq('id', data.user.id); 
-        const { error: ve } = await supabase.from('vehicles').insert([{
+        // Vehicle record
+        await window.supabaseClient.from('vehicles').insert([{
             user_id: data.user.id,
-            vehicle_number: registerDetailsStore.vehicle_number,
-            vehicle_type: registerDetailsStore.type
+            vehicle_number: vehicleNumber,
+            vehicle_type: type
         }]);
     }
 
@@ -161,81 +130,8 @@ async function verifyRegisterOtp(e) {
     redirectBasedOnRole('student');
 }
 
-// ----- OTP UX UTILITIES -----
-function setupOtpInputs(formId) {
-    const form = document.getElementById(formId);
-    if (!form) return;
-    const inputs = form.querySelectorAll('.otp-input');
-    
-    inputs.forEach((input, index) => {
-        input.addEventListener('input', (e) => {
-            if (e.target.value.length === 1 && index < inputs.length - 1) {
-                inputs[index + 1].focus();
-            }
-        });
-        
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Backspace' && !e.target.value && index > 0) {
-                inputs[index - 1].focus();
-            }
-        });
-
-        input.addEventListener('paste', (e) => {
-            e.preventDefault();
-            const pastedData = e.clipboardData.getData('text').slice(0, inputs.length).replace(/[^0-9]/g, '');
-            pastedData.split('').forEach((char, i) => {
-                if (inputs[index + i]) {
-                    inputs[index + i].value = char;
-                    if (index + i < inputs.length - 1) inputs[index + i + 1].focus();
-                }
-            });
-        });
-    });
-}
-
-function changePhoneNumber(context) {
-    if (context === 'login') {
-        document.getElementById('login-step-otp').style.display = 'none';
-        document.getElementById('login-step-phone').style.display = 'block';
-        document.querySelectorAll('#login-otp-form .otp-input').forEach(i => i.value = '');
-    } else {
-        document.getElementById('register-step-otp').style.display = 'none';
-        document.getElementById('register-step-form').style.display = 'block';
-        document.querySelectorAll('#register-otp-form .otp-input').forEach(i => i.value = '');
-    }
-}
-
-function startResendCountdown(context) {
-    const btn = document.getElementById(context === 'login' ? 'resend-btn' : 'register-resend-btn');
-    const txt = document.getElementById(context === 'login' ? 'resend-text' : 'register-resend-text');
-    let timeLeft = 30;
-    
-    btn.disabled = true;
-    btn.onclick = () => resendOtp(context);
-    
-    const timer = setInterval(() => {
-        timeLeft--;
-        txt.textContent = `Resend OTP in ${timeLeft}s`;
-        if (timeLeft <= 0) {
-            clearInterval(timer);
-            txt.textContent = "Didn't receive the code?";
-            btn.disabled = false;
-        }
-    }, 1000);
-}
-
-async function resendOtp(context) {
-    const phone = context === 'login' ? loginPhoneStore : registerPhoneStore;
-    const { error } = await supabase.auth.signInWithOtp({ phone });
-    if (error) {
-        showMessage(context === 'login' ? 'otp-error' : 'register-otp-error', 'Unable to resend OTP. Try again later.');
-    } else {
-        startResendCountdown(context);
-    }
-}
-
 async function logoutUser() { 
-    await supabase.auth.signOut(); 
+    await window.supabaseClient.auth.signOut(); 
     location.href = 'index.html'; 
 }
 

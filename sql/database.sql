@@ -14,7 +14,7 @@ create table public.profiles (
     id uuid primary key references auth.users(id) on delete cascade,
     full_name text not null default '',
     email text,
-    phone text unique,
+    student_id text unique not null,
     role text not null default 'student' check (role in ('student','security','admin')),
     created_at timestamptz not null default now()
 );
@@ -68,8 +68,8 @@ create unique index one_open_log_per_vehicle on public.access_logs(vehicle_id) w
 -- Auth Trigger
 create or replace function public.handle_new_user() returns trigger language plpgsql security definer set search_path = public as $$ 
 begin 
-    insert into public.profiles (id,full_name,email,phone,role) 
-    values (new.id,coalesce(new.raw_user_meta_data->>'name',''),new.email,new.phone,'student'); 
+    insert into public.profiles (id,full_name,email,student_id,role) 
+    values (new.id,coalesce(new.raw_user_meta_data->>'name',''),new.email,new.raw_user_meta_data->>'student_id','student'); 
     return new; 
 end; 
 $$;
@@ -248,15 +248,15 @@ on conflict (slot_number) do nothing;
 -- ==============================================================================
 /*
 alter table public.profiles rename column name to full_name;
-alter table public.profiles alter column email drop not null;
 alter table public.profiles drop column if exists phone;
-alter table public.profiles add column phone text unique;
+alter table public.profiles drop column if exists student_id;
+alter table public.profiles add column student_id text unique not null;
 
 -- Recreate trigger with updated column name
 create or replace function public.handle_new_user() returns trigger language plpgsql security definer set search_path = public as $$ 
 begin 
-    insert into public.profiles (id,full_name,email,phone,role) 
-    values (new.id,coalesce(new.raw_user_meta_data->>'name',''),new.email,new.phone,'student'); 
+    insert into public.profiles (id,full_name,email,student_id,role) 
+    values (new.id,coalesce(new.raw_user_meta_data->>'name',''),new.email,new.raw_user_meta_data->>'student_id','student'); 
     return new; 
 end; 
 $$;
