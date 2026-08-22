@@ -24,7 +24,12 @@ export default async function handler(req, res) {
       .eq('student_id', studentId)
       .maybeSingle();
 
-    if (error || !user) {
+    if (error) {
+      console.error('Login DB Error:', error);
+      return res.status(500).json({ error: `Database error: ${error.message}` });
+    }
+    
+    if (!user) {
       return res.status(401).json({ error: 'Account not found. Please create an account.' });
     }
 

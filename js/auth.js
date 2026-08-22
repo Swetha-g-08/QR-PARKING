@@ -56,22 +56,7 @@ async function getCurrentUser() {
 async function getUserRole() { 
     const u = await getCurrentUser(); 
     if (!u) return null; 
-    
-    // Fetch profile
-    const { data: profile } = await window.supabaseClient.from('profiles').select('*').eq('id', u.id).single(); 
-    if (!profile) return null;
-
-    // Fetch vehicle if student
-    if (profile.role === 'student') {
-        const { data: vehicle } = await window.supabaseClient.from('vehicles').select('*').eq('user_id', u.id).order('created_at', {ascending: false}).limit(1).single();
-        if (vehicle) {
-            profile.vehicle_id = vehicle.id;
-            profile.vehicle_number = vehicle.vehicle_number;
-            profile.vehicle_type = vehicle.vehicle_type;
-        }
-    }
-    
-    return profile; 
+    return u;
 }
 
 function redirectBasedOnRole(role) { 

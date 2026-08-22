@@ -23,7 +23,7 @@ export default async function handler(req, res) {
     // Fetch profile
     const { data: profile } = await supabase
       .from('profiles')
-      .select('id, name, student_id, role')
+      .select('id, name, student_id, role, vehicle_number, vehicle_type')
       .eq('id', decoded.sub)
       .single();
 
@@ -35,7 +35,9 @@ export default async function handler(req, res) {
           id: profile.id,
           name: profile.name,
           student_id: profile.student_id,
-          role: profile.role
+          role: profile.role,
+          vehicle_number: profile.vehicle_number,
+          vehicle_type: profile.vehicle_type
         }, 
         token 
       } 
