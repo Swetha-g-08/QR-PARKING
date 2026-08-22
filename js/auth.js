@@ -186,9 +186,9 @@ document.addEventListener('DOMContentLoaded', () => {
             dropdown.id = 'profileDropdown';
             dropdown.className = 'dropdown-menu';
             dropdown.innerHTML = `
-                <button class="dropdown-item" onclick="logoutUser()">
-                    <i data-lucide="log-out" size="16"></i> Logout
-                </button>
+                <a href="register.html" class="dropdown-item" style="text-decoration: none;">
+                    <i data-lucide="home" size="16"></i> Home
+                </a>
             `;
             profileBtn.style.position = 'relative';
             profileBtn.appendChild(dropdown);
