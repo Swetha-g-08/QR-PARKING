@@ -55,28 +55,39 @@ async function loginUser(e) {
     const studentId = document.getElementById('student_id').value.trim().toUpperCase();
     const password = document.getElementById('password').value;
     
+    console.log("Login clicked");
+    console.log("Student ID:", studentId);
+    
     if (!studentId || !password) return showMessage('login-error', 'Please enter your Student ID and password.');
     
     showMessage('login-error', '');
     if (btn) setLoading(btn, true, 'Logging in...');
     
-    const internalEmail = getInternalEmail(studentId);
-    
-    const { data, error } = await window.supabaseClient.auth.signInWithPassword({
-        email: internalEmail,
-        password: password
-    });
-    
-    if (btn) setLoading(btn, false);
-    
-    if (error) {
-        console.error("Login error:", error);
-        return showMessage('login-error', 'Invalid Student ID or password.');
+    try {
+        console.log("Attempting Supabase login...");
+        const internalEmail = getInternalEmail(studentId);
+        
+        const { data, error } = await window.supabaseClient.auth.signInWithPassword({
+            email: internalEmail,
+            password: password
+        });
+        
+        console.log("Login response:", data);
+        console.log("Login error:", error);
+        
+        if (error) {
+            return showMessage('login-error', 'Invalid Student ID or password.');
+        }
+        
+        const p = await getUserRole(); 
+        if (!p) return showMessage('login-error', 'Account not found. Please create an account.'); 
+        redirectBasedOnRole(p.role); 
+    } catch (error) {
+        console.error("LOGIN ERROR:", error);
+        showMessage('login-error', 'An error occurred during login.');
+    } finally {
+        if (btn) setLoading(btn, false);
     }
-    
-    const p = await getUserRole(); 
-    if (!p) return showMessage('login-error', 'Account not found. Please create an account.'); 
-    redirectBasedOnRole(p.role); 
 }
 
 // ----- REGISTER -----
@@ -90,6 +101,9 @@ async function registerUser(e) {
     const type = document.getElementById('vehicle_type').value;
     const vehicleNumber = document.getElementById('vehicle_number').value.trim().toUpperCase();
     
+    console.log("Register clicked");
+    console.log("Student ID:", studentId);
+    
     if (!name || !studentId || !password || !confirmPassword || !vehicleNumber) {
         return showMessage('register-error', 'Please fill all required fields.');
     }
@@ -100,34 +114,55 @@ async function registerUser(e) {
     showMessage('register-error', '');
     if (btn) setLoading(btn, true, 'Creating account...');
     
-    const internalEmail = getInternalEmail(studentId);
-    
-    const { data, error } = await window.supabaseClient.auth.signUp({ 
-        email: internalEmail,
-        password: password,
-        options: { data: { name: name, student_id: studentId } } 
-    });
-    
-    if (error) {
-        if (btn) setLoading(btn, false);
-        console.error("Register error:", error);
-        if (error.message.toLowerCase().includes('already registered')) {
-            return showMessage('register-error', 'This Student ID is already registered.');
+    try {
+        // Check if student ID already exists
+        const { data: existingProfile, error: profileCheckError } = await window.supabaseClient
+            .from('profiles')
+            .select('id')
+            .eq('student_id', studentId)
+            .maybeSingle();
+            
+        if (existingProfile) {
+            return showMessage('register-error', 'Student ID already registered. Please login.');
         }
-        return showMessage('register-error', 'Unable to create account. Please try again.');
-    }
 
-    if (data.user) {
-        // Vehicle record
-        await window.supabaseClient.from('vehicles').insert([{
-            user_id: data.user.id,
-            vehicle_number: vehicleNumber,
-            vehicle_type: type
-        }]);
-    }
+        console.log("Creating Supabase Auth user...");
+        const internalEmail = getInternalEmail(studentId);
+        
+        const { data, error } = await window.supabaseClient.auth.signUp({ 
+            email: internalEmail,
+            password: password,
+            options: { data: { full_name: name, student_id: studentId } } 
+        });
+        
+        console.log("Signup response:", data);
+        console.log("Signup error:", error);
+        
+        if (error) {
+            if (error.message.toLowerCase().includes('already registered')) {
+                return showMessage('register-error', 'This Student ID is already registered.');
+            }
+            return showMessage('register-error', 'Unable to create account. Please try again.');
+        }
 
-    if (btn) setLoading(btn, false);
-    redirectBasedOnRole('student');
+        if (data.user) {
+            console.log("Creating profile for:", data.user.id);
+            // Profile is handled by the SQL trigger. Vehicle record insertion:
+            await window.supabaseClient.from('vehicles').insert([{
+                user_id: data.user.id,
+                vehicle_number: vehicleNumber,
+                vehicle_type: type
+            }]);
+            console.log("Profile created successfully");
+        }
+
+        redirectBasedOnRole('student');
+    } catch (error) {
+        console.error("REGISTER ERROR:", error);
+        showMessage('register-error', 'An error occurred during registration.');
+    } finally {
+        if (btn) setLoading(btn, false);
+    }
 }
 
 async function logoutUser() { 
